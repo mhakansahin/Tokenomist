@@ -1,0 +1,46 @@
+# Quickstart: Doğrulama Senaryoları
+
+Özelliğin uçtan uca çalıştığını gösteren elle ve otomatik senaryolar. Ayrıntılar: [contracts/](contracts/), [data-model.md](data-model.md).
+
+## Önkoşullar
+
+- VS Code ≥ 1.94, Claude Code eklentisi (`anthropic.claude-code`) kurulu ve oturum açılmış
+- Node.js 20+ (yalnızca geliştirme için)
+- Spec Kit kurulu bir test çalışma alanı (örn. bu depo veya `tests/fixtures/workspace/`)
+
+## Kurulum ve çalıştırma
+
+```bash
+npm ci
+npm run compile
+npm test                 # birim testleri (node:test)
+npm run test:integration # @vscode/test-electron
+```
+
+Elle deneme: VS Code'da F5 ("Run Extension") → test çalışma alanını aç.
+
+## Senaryolar
+
+| # | Adım | Beklenen | Kapsar |
+|---|---|---|---|
+| S1 | Claude Code eklentisi devre dışıyken çalışma alanını aç | "Claude Code gerekli" bildirimi; status bar `passive`; `.claude/settings.local.json` değişmemiş | US4, FR-001 |
+| S2 | İlk ayarı aç, Tasarruf modunu seç | Seviye→model tablosu: Haiku/Haiku/Sonnet | US3, FR-020 |
+| S3 | Eşikleri `medium=70, complex=60` yap | Kayıt reddedilir, hata mesajı görünür | FR-021 |
+| S4 | Claude Code'da `/speckit-specify <tarif>` çalıştır | Orijinal model anlık görüntüsü alınır; local `model` = `sonnet`; modal "Yeni konuşmada başla / devam" görünür; status bar `writing · Sonnet` | FR-003, R3 |
+| S5 | `spec.md`'yi kaydet (plan yok) | 2 sn içinde bildirim + status bar `Level → Model?`; gerekçede ≤ 3 sinyal | FR-004, FR-009, FR-024, SC-002 |
+| S6 | Kilit yokken `/speckit-plan` çalıştır | Modal açılır. "Onayla ve yeni konuşma aç" → prompt engellenir, local `model` = önerilen, yeni konuşma açılır, status bar `🔒` | FR-010–FR-013, FR-024 |
+| S7 | Yeni konuşmada `/speckit-plan`, `/speckit-tasks`, `/speckit-implement` | Kapı sessiz; oturum kilitli modelde. `/model` ile kontrol edilir | FR-012, SC-004 |
+| S8 | Kilitliyken `/model haiku` | VS Code modal'ı. "Geri al" → geçiş reddedilir + uyarı; "Kilidi güncelle" → kilit Haiku, özet `manualOverride` | FR-023 |
+| S9 | VS Code'u kapatıp aç | Kilit sürer, status bar aynı | FR-014 |
+| S10 | `tasks.md`'deki son görevi `[x]` yap | "Spec'i bitir?" isteği. Reddet → kilit sürer; onayla → local `model` S4 öncesi haline döner (yoksa silinir), özet görünür | FR-015–FR-017, SC-003 |
+| S11 | Kullanım özetlerini aç | Spec satırı: seviye, model, tahmini tasarruf (Opus → %0, Sonnet → %40, Haiku → %80) | FR-018, FR-019 |
+| S12 | VS Code dilini Türkçe ↔ İngilizce değiştir | Tüm metinler seçilen dilde | FR-025 |
+| S13 | `ANTHROPIC_MODEL` tanımlıyken aç | Status bar `passive` + açıklama; dosyaya yazılmaz | R6 guard |
+| S14 | `settings.local.json`'u bozuk JSON yap | Tokenomist yazmaz, pasif kalır, uyarır | R6 guard |
+| S15 | "Claude Code Ayarlarını Temizle" komutu | Tokenomist hook ve `model` girdileri gider; kullanıcı girdileri korunur | Kısıt 4 |
+
+## Otomatik doğrulama eşlemesi
+
+- **Birim**: skor ve seviye (SC-005 fixture seti), eşik doğrulama, mod eşlemesi, tasarruf hesabı, settings.local.json birleştirme/geri yükleme, durum makinesi geçişleri, hook yanıt kararları (saf fonksiyon).
+- **Entegrasyon**: S1, S4–S6, S8 (HTTP uç noktalarına sahte hook POST'ları ile), S9, S10, S14, S15.
+- **Elle**: S7 (gerçek Claude Code oturumu), S12. Ayrıca Claude Code sürümünün `UserPromptExpansion` ve `PreModelSwitch` olaylarını gerçekten çağırdığı doğrulanır (research "Açık riskler").

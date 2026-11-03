@@ -1,0 +1,150 @@
+{
+  "id": "71608db6",
+  "createdAt": "2026-11-03T13:01:16.732Z",
+  "updatedAt": "2026-11-03T13:27:26.334Z",
+  "kind": "project",
+  "current": null,
+  "history": [
+    "category",
+    "other_topic",
+    "other_shape",
+    "pitch",
+    "project_name",
+    "generic_persona",
+    "generic_journey",
+    "generic_features",
+    "backend_needed",
+    "observability",
+    "ci_cd",
+    "testing",
+    "extras"
+  ],
+  "answers": {
+    "category": {
+      "nodeId": "category",
+      "optionIds": [
+        "other"
+      ],
+      "labels": [
+        "Diğer"
+      ],
+      "answeredAt": "2026-11-03T13:02:39.296Z"
+    },
+    "other_topic": {
+      "nodeId": "other_topic",
+      "optionIds": [],
+      "labels": [
+        "VS Code eklentisi; sadece Claude Code'un modellerini (karmaşıklığa göre) değiştirecek. Başka API'lerim yok."
+      ],
+      "text": "VS Code eklentisi; sadece Claude Code'un modellerini (karmaşıklığa göre) değiştirecek. Başka API'lerim yok.",
+      "answeredAt": "2026-11-03T13:03:34.071Z"
+    },
+    "other_shape": {
+      "nodeId": "other_shape",
+      "optionIds": [
+        "_custom"
+      ],
+      "labels": [
+        "VS Code eklentisi"
+      ],
+      "text": "VS Code eklentisi",
+      "answeredAt": "2026-11-03T13:04:04.338Z"
+    },
+    "pitch": {
+      "nodeId": "pitch",
+      "optionIds": [],
+      "labels": [
+        "Claude Code kullanan geliştiriciler için, basit işlerde ucuz modeli, zor işlerde güçlü modeli otomatik seçerek kullanım limitini ve maliyeti düşürür."
+      ],
+      "text": "Claude Code kullanan geliştiriciler için, basit işlerde ucuz modeli, zor işlerde güçlü modeli otomatik seçerek kullanım limitini ve maliyeti düşürür.",
+      "answeredAt": "2026-11-03T13:04:38.000Z"
+    },
+    "project_name": {
+      "nodeId": "project_name",
+      "optionIds": [],
+      "labels": [
+        "Tokenomist"
+      ],
+      "text": "Tokenomist",
+      "answeredAt": "2026-11-03T13:05:12.172Z"
+    },
+    "generic_persona": {
+      "nodeId": "generic_persona",
+      "optionIds": [],
+      "labels": [
+        "Şimdilik bireysel geliştirici: Pro/Max aboneliğiyle Claude Code kullanan, her şeyi Opus ile yaptığı için gün ortasında limiti dolan ve limitini akşama kadar yetirmek isteyen bir geliştirici."
+      ],
+      "text": "Şimdilik bireysel geliştirici: Pro/Max aboneliğiyle Claude Code kullanan, her şeyi Opus ile yaptığı için gün ortasında limiti dolan ve limitini akşama kadar yetirmek isteyen bir geliştirici.",
+      "answeredAt": "2026-11-03T13:05:49.633Z"
+    },
+    "generic_journey": {
+      "nodeId": "generic_journey",
+      "optionIds": [],
+      "labels": [
+        "1) Kurulum: VS Code Marketplace'ten kurulur, Claude Code'un yüklü olduğunu algılar. 2) İlk ayar: Tasarruf / Dengeli / Kalite modlarından biri seçilir; hangi karmaşıklık seviyesinde hangi modelin (Haiku/Sonnet/Opus) kullanılacağı görülür. 3) Spec yazımı aşaması: Kullanıcı prompt verir, AI spec'i yazar (/speckit.specify, clarify). Bu aşamada henüz spec olmadığından sabit bir model kullanılır (varsayılan Sonnet; istenirse moda bağlı: Tasarruf=Haiku, Kalite=Opus). 4) Spec hazır olunca: Tokenomist spec içeriğini analiz eder, karmaşıklık seviyesini ve önerdiği modeli gösterir (örn. 'Bu spec karmaşık → Opus'). 5) Kullanıcı öneriyi onaylar ya da elle değiştirir; ardından model plan → tasks → implement boyunca kilitlenir ve yolda değişmez; status bar'da aktif spec, seviye ve kilitli model görünür. 6) Spec bitince önceki model geri yüklenir ve spec bazlı özet (kullanılan model, tahmini limit tasarrufu) gösterilir."
+      ],
+      "text": "1) Kurulum: VS Code Marketplace'ten kurulur, Claude Code'un yüklü olduğunu algılar. 2) İlk ayar: Tasarruf / Dengeli / Kalite modlarından biri seçilir; hangi karmaşıklık seviyesinde hangi modelin (Haiku/Sonnet/Opus) kullanılacağı görülür. 3) Spec yazımı aşaması: Kullanıcı prompt verir, AI spec'i yazar (/speckit.specify, clarify). Bu aşamada henüz spec olmadığından sabit bir model kullanılır (varsayılan Sonnet; istenirse moda bağlı: Tasarruf=Haiku, Kalite=Opus). 4) Spec hazır olunca: Tokenomist spec içeriğini analiz eder, karmaşıklık seviyesini ve önerdiği modeli gösterir (örn. 'Bu spec karmaşık → Opus'). 5) Kullanıcı öneriyi onaylar ya da elle değiştirir; ardından model plan → tasks → implement boyunca kilitlenir ve yolda değişmez; status bar'da aktif spec, seviye ve kilitli model görünür. 6) Spec bitince önceki model geri yüklenir ve spec bazlı özet (kullanılan model, tahmini limit tasarrufu) gösterilir.",
+      "answeredAt": "2026-11-03T13:27:02.392Z"
+    },
+    "generic_features": {
+      "nodeId": "generic_features",
+      "optionIds": [],
+      "labels": [
+        "Karar prompt bazında değil, SDD spec bazında verilir (kullanıcı tüm projelerde SDD/Spec Kit kullanıyor; spec'i de AI yazıyor). Spec yazım aşamasında sabit model (varsayılan Sonnet, istenirse moda bağlı); karar spec yazıldıktan sonra, plan/tasks/implement öncesi verilir.\n1) Spec karmaşıklık analizi: spec dosyasının içeriğini (gereksinim sayısı, etkilenen bileşenler, entegrasyonlar, belirsizlik vb.) analiz edip basit/orta/karmaşık seviyesine ayırır.\n2) Spec hazır olunca model kararı ve kilit: seviyeye göre model (Haiku/Sonnet/Opus) seçilir ve plan → tasks → implement boyunca, spec bitene kadar değişmez.\n3) Onay / elle düzeltme yalnızca başta: karar kullanıcıya gösterilir, beğenmezse kilitlenmeden önce değiştirir; sonra model kilitlenir.\n4) Modlar / eşikler: Tasarruf / Dengeli / Kalite modları, skor eşikleri özelleştirilebilir.\n5) Spec bazlı kullanım özeti: her spec için kullanılan model ve tahmini tasarruf."
+      ],
+      "text": "Karar prompt bazında değil, SDD spec bazında verilir (kullanıcı tüm projelerde SDD/Spec Kit kullanıyor; spec'i de AI yazıyor). Spec yazım aşamasında sabit model (varsayılan Sonnet, istenirse moda bağlı); karar spec yazıldıktan sonra, plan/tasks/implement öncesi verilir.\n1) Spec karmaşıklık analizi: spec dosyasının içeriğini (gereksinim sayısı, etkilenen bileşenler, entegrasyonlar, belirsizlik vb.) analiz edip basit/orta/karmaşık seviyesine ayırır.\n2) Spec hazır olunca model kararı ve kilit: seviyeye göre model (Haiku/Sonnet/Opus) seçilir ve plan → tasks → implement boyunca, spec bitene kadar değişmez.\n3) Onay / elle düzeltme yalnızca başta: karar kullanıcıya gösterilir, beğenmezse kilitlenmeden önce değiştirir; sonra model kilitlenir.\n4) Modlar / eşikler: Tasarruf / Dengeli / Kalite modları, skor eşikleri özelleştirilebilir.\n5) Spec bazlı kullanım özeti: her spec için kullanılan model ve tahmini tasarruf.",
+      "answeredAt": "2026-11-03T13:27:08.588Z"
+    },
+    "backend_needed": {
+      "nodeId": "backend_needed",
+      "optionIds": [
+        "none"
+      ],
+      "labels": [
+        "Hayır, tamamen istemci tarafı"
+      ],
+      "answeredAt": "2026-11-03T13:27:11.673Z"
+    },
+    "observability": {
+      "nodeId": "observability",
+      "optionIds": [
+        "none"
+      ],
+      "labels": [
+        "Şimdilik yok"
+      ],
+      "answeredAt": "2026-11-03T13:27:14.562Z"
+    },
+    "ci_cd": {
+      "nodeId": "ci_cd",
+      "optionIds": [
+        "github_actions"
+      ],
+      "labels": [
+        "GitHub Actions"
+      ],
+      "answeredAt": "2026-11-03T13:27:17.802Z"
+    },
+    "testing": {
+      "nodeId": "testing",
+      "optionIds": [
+        "unit",
+        "integration"
+      ],
+      "labels": [
+        "Birim testleri",
+        "Entegrasyon testleri"
+      ],
+      "answeredAt": "2026-11-03T13:27:21.529Z"
+    },
+    "extras": {
+      "nodeId": "extras",
+      "optionIds": [],
+      "labels": [
+        "1) Hakem pahalı olmasın: karmaşıklık analizi limit yemesin; kural tabanlı/yerel skorlama, LLM gerekirse en fazla tek kısa Haiku çağrısı. 2) Spec içeriği Anthropic dışında hiçbir üçüncü tarafa gitmesin (spec zaten Claude tarafından yazıldığı için Haiku hakem çağrısı yeni bir gizlilik riski oluşturmaz; telemetri/analitik yok). 3) Şüphede güçlü model: skor sınırdaysa bir üst model seçilsin. 4) Claude Code'a dokunmama: Claude Code'un kendi ayarları kalıcı olarak bozulmasın; spec bitince önceki model geri yüklensin."
+      ],
+      "text": "1) Hakem pahalı olmasın: karmaşıklık analizi limit yemesin; kural tabanlı/yerel skorlama, LLM gerekirse en fazla tek kısa Haiku çağrısı. 2) Spec içeriği Anthropic dışında hiçbir üçüncü tarafa gitmesin (spec zaten Claude tarafından yazıldığı için Haiku hakem çağrısı yeni bir gizlilik riski oluşturmaz; telemetri/analitik yok). 3) Şüphede güçlü model: skor sınırdaysa bir üst model seçilsin. 4) Claude Code'a dokunmama: Claude Code'un kendi ayarları kalıcı olarak bozulmasın; spec bitince önceki model geri yüklensin.",
+      "answeredAt": "2026-11-03T13:27:26.334Z"
+    }
+  }
+}

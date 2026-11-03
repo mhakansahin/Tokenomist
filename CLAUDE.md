@@ -1,0 +1,3 @@
+# Tokenomist
+
+@AGENTS.md
