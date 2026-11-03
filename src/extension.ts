@@ -21,7 +21,10 @@ const NEW_CONVERSATION_COMMAND = "claude-vscode.newConversation";
 export interface TokenomistApi {
   tracker: Tracker | undefined;
   status: StatusBar;
+  onboardingOffered: boolean;
 }
+
+const ONBOARDED_KEY = "tokenomist.onboarded";
 
 let output: vscode.OutputChannel | undefined;
 let tracker: Tracker | undefined;
@@ -30,7 +33,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
   output = vscode.window.createOutputChannel("Tokenomist");
   const status = new StatusBar();
   context.subscriptions.push(output, status);
-  const api: TokenomistApi = { tracker: undefined, status };
+  const api: TokenomistApi = { tracker: undefined, status, onboardingOffered: false };
 
   context.subscriptions.push(
     vscode.commands.registerCommand(SHOW_STATUS_COMMAND, () => {
@@ -84,7 +87,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
   const watcher = new SpecKitWatcher(folder);
   context.subscriptions.push(watcher);
   if (!detection.installed) {
-    void vscode.window.showWarningMessage(passiveExplanation("claudeMissing"));
+    const install = vscode.l10n.t("Find Claude Code");
+    void vscode.window.showWarningMessage(passiveExplanation("claudeMissing"), install).then((choice) => {
+      if (choice === install) {
+        void vscode.commands.executeCommand("workbench.extensions.search", CLAUDE_CODE_EXTENSION_ID);
+      }
+    });
     return passive("claudeMissing");
   }
   if (detection.overriddenBy) {
@@ -153,6 +161,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
   }
   render();
   log(`Active feature: ${watcher.activeFeature?.featureDir ?? "none"}`);
+  api.onboardingOffered = await offerOnboarding(context);
   return api;
 }
 
@@ -202,6 +211,26 @@ function thresholdErrorText(error: ThresholdError): string {
     case "order":
       return vscode.l10n.t("The medium threshold must be lower than the complex threshold. The previous values stay in use.");
   }
+}
+
+/** US4: the first time Tokenomist can work, suggest choosing a mode. */
+async function offerOnboarding(context: vscode.ExtensionContext): Promise<boolean> {
+  if (context.globalState.get<boolean>(ONBOARDED_KEY)) {
+    return false;
+  }
+  await context.globalState.update(ONBOARDED_KEY, true);
+  const setup = vscode.l10n.t("Open setup");
+  void vscode.window
+    .showInformationMessage(
+      vscode.l10n.t("Tokenomist is ready: it picks Haiku, Sonnet or Opus per spec. Choose a mode?"),
+      setup,
+    )
+    .then((choice) => {
+      if (choice === setup) {
+        void vscode.commands.executeCommand("tokenomist.openSetup");
+      }
+    });
+  return true;
 }
 
 function explainPassive(cause: PassiveCause | undefined): void {

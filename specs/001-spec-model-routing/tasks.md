@@ -152,13 +152,13 @@ description: "Task list for Spec Bazlı Model Yönlendirme (Tokenomist)"
 
 ### Tests (önce yaz)
 
-- [ ] T053 [US4] `tests/integration/activation.test.ts`: Claude Code yokken (eklenti sahte olarak devre dışı) → bildirim + status bar `passive`, `settings.local.json` oluşturulmaz; `ANTHROPIC_MODEL` tanımlı → pasif + açıklama; bozuk JSON → yazılmaz + uyarı; `.specify/feature.json` olmayan çalışma alanı → pasif, dosyaya yazılmaz (Edge Cases); ilk etkinleşmede (globalState bayrağı yok) Claude Code varsa "İlk ayarı aç" önerisi (FR-001, research R6)
+- [x] T053 [US4] `tests/integration/suite/activation.ts` (senaryo başına ayrı VS Code oturumu, `runTests.ts`; bozuk JSON senaryosu `tests/integration/lockFlow.test.ts` içinde): Claude Code yokken (eklenti sahte olarak devre dışı) → bildirim + status bar `passive`, `settings.local.json` oluşturulmaz; `ANTHROPIC_MODEL` tanımlı → pasif + açıklama; bozuk JSON → yazılmaz + uyarı; `.specify/feature.json` olmayan çalışma alanı → pasif, dosyaya yazılmaz (Edge Cases); ilk etkinleşmede (globalState bayrağı yok) Claude Code varsa "İlk ayarı aç" önerisi (FR-001, research R6)
 
 ### Implementation
 
-- [ ] T054 [US4] `src/extension.ts`: ilk çalıştırma bayrağı (`globalState`), Claude Code yoksa "Claude Code gerekli" bildirimi + Marketplace bağlantısı, varsa `tokenomist.openSetup` önerisi; pasif nedenini status bar tıklamasında açıkla (FR-001, contracts/vscode-contributions.md Activation)
-- [ ] T055 [US4] Spike sonucu (T006) kapılardan birini desteklemiyorsa: `src/app/hookServer.ts` için "kapı pasif" durumu ve `src/app/tracker.ts` içinde yalnızca dosya izleme + bildirim geri düşüşü; destekleniyorsa bu görevi "uygulanamaz" notuyla kapat
-- [ ] T056 [US4] US4 metinlerini l10n dosyalarına ekle (FR-025)
+- [x] T054 [US4] `src/extension.ts`: ilk çalıştırma bayrağı (`globalState`), Claude Code yoksa "Claude Code gerekli" bildirimi + Marketplace bağlantısı, varsa `tokenomist.openSetup` önerisi; pasif nedenini status bar tıklamasında açıkla (FR-001, contracts/vscode-contributions.md Activation)
+- [x] T055 [US4] Spike sonucu (T006) kapılardan birini desteklemiyorsa: `src/app/hookServer.ts` için "kapı pasif" durumu ve `src/app/tracker.ts` içinde yalnızca dosya izleme + bildirim geri düşüşü; destekleniyorsa bu görevi "uygulanamaz" notuyla kapat — **Uygulanamaz (2026-11-03)**: spike `UserPromptExpansion` ve `PreModelSwitch` olaylarını doğruladı; hook sunucusu başlayamazsa status bar'daki `$(debug-disconnect)` "kapı pasif" göstergesi (`src/extension.ts`) devreye girer
+- [x] T056 [US4] US4 metinlerini l10n dosyalarına ekle (FR-025)
 
 **Checkpoint**: Tüm hikâyeler bağımsız çalışır
 
