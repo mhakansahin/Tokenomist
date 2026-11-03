@@ -42,21 +42,21 @@ description: "Task list for Spec Bazlı Model Yönlendirme (Tokenomist)"
 
 ### Tests (önce yaz, kırmızı olduğunu gör)
 
-- [ ] T007 [P] `tests/unit/claudeSettingsDoc.test.ts`: (a) `model` yokken yazma → eklenir, diğer anahtarlar korunur; (b) kullanıcı hook'ları aynı olay dizisinde korunur, yalnızca URL yolu `/tokenomist/` içeren girdiler değişir; (c) snapshot `{present:false}` ile geri yükleme `model`'i siler, `{present:true,value}` aynen geri koyar; (d) geçersiz JSON → `ParseError` döner, yazma önerilmez; (e) `model` yalnızca `haiku|sonnet|opus` kabul eder (contracts/claude-settings-and-hooks.md §1)
-- [ ] T008 [P] `tests/unit/tracking.test.ts`: data-model.md "TrackingState geçişleri" tablosundaki her geçiş ve geçersiz geçişlerin reddi; `locked` iken spec değişikliği kilidi değiştirmez; `suspended` kayıt ayara dokunmaz
-- [ ] T009 [P] `tests/unit/tasksProgress.test.ts`: `- [ ]`/`- [x]`/`- [X]` sayımı, kod bloğu içindekiler hariç; 0 görev → tamamlanmış sayılmaz (FR-015)
+- [x] T007 [P] `tests/unit/claudeSettingsDoc.test.ts`: (a) `model` yokken yazma → eklenir, diğer anahtarlar korunur; (b) kullanıcı hook'ları aynı olay dizisinde korunur, yalnızca URL yolu `/tokenomist/` içeren girdiler değişir; (c) snapshot `{present:false}` ile geri yükleme `model`'i siler, `{present:true,value}` aynen geri koyar; (d) geçersiz JSON → `ParseError` döner, yazma önerilmez; (e) `model` yalnızca `haiku|sonnet|opus` kabul eder (contracts/claude-settings-and-hooks.md §1)
+- [x] T008 [P] `tests/unit/tracking.test.ts`: data-model.md "TrackingState geçişleri" tablosundaki her geçiş ve geçersiz geçişlerin reddi; `locked` iken spec değişikliği kilidi değiştirmez; `suspended` kayıt ayara dokunmaz
+- [x] T009 [P] `tests/unit/tasksProgress.test.ts`: `- [ ]`/`- [x]`/`- [X]` sayımı, kod bloğu içindekiler hariç; 0 görev → tamamlanmış sayılmaz (FR-015)
 
 ### Implementation
 
-- [ ] T010 [P] `src/domain/types.ts`: `Model = "haiku"|"sonnet"|"opus"`, `Level = "simple"|"medium"|"complex"`, `Mode = "saver"|"balanced"|"quality"`, `SpecRef`, `SpecAnalysis`, `ModelSnapshot` (`localModel: {present:false}|{present:true,value:string}`, opsiyonel `userModel`, `createdLocalFile`, `takenAt`), `ModelLock` (`segments: {model, from, to?}[]`), `SpecTracking`, `TrackingState`, `SpecSummary` (data-model.md)
-- [ ] T011 `src/domain/claudeSettingsDoc.ts`: saf fonksiyonlar `parse`, `applyModel`, `restoreModel(snapshot)`, `upsertTokenomistHooks(port, token)`, `removeTokenomistHooks`, `takeSnapshot`; contract §1 JSON yapısı birebir, girinti 2 boşluk (T007'yi yeşile çevirir)
-- [ ] T012 `src/app/claudeSettingsStore.ts`: `<workspace>/.claude/settings.local.json` atomik okuma/yazma (geçici dosya + rename), dosyayı Tokenomist oluşturduysa `.git/info/exclude`'a `.claude/settings.local.json` ekle (varsa tekrar ekleme), `~/.claude/settings.json` için yalnızca `model` anahtarı oku/geri yaz (R5, R6)
-- [ ] T013 [P] `src/domain/tracking.ts`: durum makinesi geçiş fonksiyonu `transition(tracking, event)` (T008'i yeşile çevirir)
-- [ ] T014 [P] `src/domain/tasksProgress.ts`: `isComplete(tasksMd): boolean` (T009'u yeşile çevirir)
-- [ ] T015 [P] `src/persistence/trackingStore.ts`: `workspaceState` üzerinde `featureDir` başına tek `SpecTracking` kaydı; yükle/kaydet/sil (FR-014)
-- [ ] T016 `src/app/specKitWatcher.ts`: `FileSystemWatcher` ile `.specify/feature.json`, aktif özelliğin `spec.md`, `plan.md`, `tasks.md`; olaylar `featureChanged`, `specSaved`, `planCreated`, `tasksChanged`; Spec Kit yoksa `unavailable` (FR-002)
-- [ ] T017 `src/app/claudeDetector.ts`: `vscode.extensions.getExtension("anthropic.claude-code")` ile varlık; override guard'ları: `process.env.ANTHROPIC_MODEL`, `claudeCode.environmentVariables` içinde `ANTHROPIC_MODEL`, managed settings'te `model`/`availableModels`; sonuç `{installed, overriddenBy?}` (FR-001, research R6)
-- [ ] T018 `src/extension.ts`: `activate` içinde detector → watcher → store bağlantısı; Claude Code yoksa veya override varsa pasif mod (dosyaya yazma yok); `deactivate` kaynakları serbest bırakır
+- [x] T010 [P] `src/domain/types.ts`: `Model = "haiku"|"sonnet"|"opus"`, `Level = "simple"|"medium"|"complex"`, `Mode = "saver"|"balanced"|"quality"`, `SpecRef`, `SpecAnalysis`, `ModelSnapshot` (`localModel: {present:false}|{present:true,value:string}`, opsiyonel `userModel`, `createdLocalFile`, `takenAt`), `ModelLock` (`segments: {model, from, to?}[]`), `SpecTracking`, `TrackingState`, `SpecSummary` (data-model.md)
+- [x] T011 `src/domain/claudeSettingsDoc.ts`: saf fonksiyonlar `parse`, `applyModel`, `restoreModel(snapshot)`, `upsertTokenomistHooks(port, token)`, `removeTokenomistHooks`, `takeSnapshot`; contract §1 JSON yapısı birebir, girinti 2 boşluk (T007'yi yeşile çevirir)
+- [x] T012 `src/app/claudeSettingsStore.ts`: `<workspace>/.claude/settings.local.json` atomik okuma/yazma (geçici dosya + rename), dosyayı Tokenomist oluşturduysa `.git/info/exclude`'a `.claude/settings.local.json` ekle (varsa tekrar ekleme), `~/.claude/settings.json` için yalnızca `model` anahtarı oku/geri yaz (R5, R6)
+- [x] T013 [P] `src/domain/tracking.ts`: durum makinesi geçiş fonksiyonu `transition(tracking, event)` (T008'i yeşile çevirir)
+- [x] T014 [P] `src/domain/tasksProgress.ts`: `isComplete(tasksMd): boolean` (T009'u yeşile çevirir)
+- [x] T015 [P] `src/persistence/trackingStore.ts`: `workspaceState` üzerinde `featureDir` başına tek `SpecTracking` kaydı; yükle/kaydet/sil (FR-014)
+- [x] T016 `src/app/specKitWatcher.ts`: `FileSystemWatcher` ile `.specify/feature.json`, aktif özelliğin `spec.md`, `plan.md`, `tasks.md`; olaylar `featureChanged`, `specSaved`, `planCreated`, `tasksChanged`; Spec Kit yoksa `unavailable` (FR-002)
+- [x] T017 `src/app/claudeDetector.ts`: `vscode.extensions.getExtension("anthropic.claude-code")` ile varlık; override guard'ları: `process.env.ANTHROPIC_MODEL`, `claudeCode.environmentVariables` içinde `ANTHROPIC_MODEL`, managed settings'te `model`/`availableModels`; sonuç `{installed, overriddenBy?}` (FR-001, research R6)
+- [x] T018 `src/extension.ts`: `activate` içinde detector → watcher → store bağlantısı; Claude Code yoksa veya override varsa pasif mod (dosyaya yazma yok); `deactivate` kaynakları serbest bırakır
 
 **Checkpoint**: `npm test` yeşil; eklenti F5 ile pasif/aktif durumu loglar
 

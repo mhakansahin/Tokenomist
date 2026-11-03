@@ -5,7 +5,7 @@
 ## Önkoşullar
 
 - VS Code ≥ 1.94, Claude Code eklentisi (`anthropic.claude-code`) kurulu ve oturum açılmış
-- Node.js 20+ (yalnızca geliştirme için)
+- Node.js 22+ (yalnızca geliştirme için; `node --test` glob desteği)
 - Spec Kit kurulu bir test çalışma alanı (örn. bu depo veya `tests/fixtures/workspace/`)
 
 ## Kurulum ve çalıştırma
