@@ -16,8 +16,7 @@ Tokenomist yalnızca aşağıdaki girdileri ekler, değiştirir ve siler. Diğer
                     "headers": { "X-Tokenomist-Token": "<token>" }, "timeout": 30 }] }
     ],
     "PreModelSwitch":  [ { "hooks": [{ "type": "http", "url": "http://127.0.0.1:<port>/tokenomist/pre-model-switch",  "headers": { "X-Tokenomist-Token": "<token>" }, "timeout": 30 }] } ],
-    "PostModelSwitch": [ { "hooks": [{ "type": "http", "url": "http://127.0.0.1:<port>/tokenomist/post-model-switch", "headers": { "X-Tokenomist-Token": "<token>" }, "timeout": 30 }] } ],
-    "SessionStart":    [ { "hooks": [{ "type": "http", "url": "http://127.0.0.1:<port>/tokenomist/session-start",     "headers": { "X-Tokenomist-Token": "<token>" }, "timeout": 10 }] } ]
+    "PostModelSwitch": [ { "hooks": [{ "type": "http", "url": "http://127.0.0.1:<port>/tokenomist/post-model-switch", "headers": { "X-Tokenomist-Token": "<token>" }, "timeout": 30 }] } ]
   }
 }
 ```
@@ -60,6 +59,8 @@ Girdi: `from_model`, `to_model`, `requested_model`, `source`, `session_id`.
 | Kullanıcı "Geri al" | `{"hookSpecificOutput":{"hookEventName":"PreModelSwitch","permissionDecision":"deny"},"systemMessage":"<yerelleştirilmiş: kilitli model korunuyor>"}` |
 | Süre dolumu (25 sn) | "Geri al" yanıtı (`deny` + systemMessage). Kullanıcı seçmeden model değişmez (FR-023). Tokenomist yanıt veremezse Claude Code'un 30 sn hook timeout'u da geçişi engeller |
 
-### POST `/tokenomist/post-model-switch`, `/tokenomist/session-start`
+### POST `/tokenomist/post-model-switch`
 
-Yalnızca `session_id → son bilinen model` eşlemesini günceller (R4). Yanıt her zaman `{}`.
+Yalnızca `session_id → son bilinen model` eşlemesini günceller (R4). Yanıt her zaman `{}`. `PreModelSwitch.from_model` de aynı eşlemeyi günceller.
+
+Model değerleri tam kimliktir (örn. `claude-sonnet-5-5`); aile alt dizgiyle çıkarılır, tanınmayan değer = bilinmiyor. `SessionStart` için HTTP hook desteklenmediğinden kayıt yapılmaz (research.md Spike sonucu).

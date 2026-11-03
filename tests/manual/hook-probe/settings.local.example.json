@@ -1,0 +1,8 @@
+{
+  "hooks": {
+    "UserPromptExpansion": [{ "matcher": "speckit-specify|speckit-plan|speckit-tasks|speckit-implement", "hooks": [{ "type": "http", "url": "http://127.0.0.1:47811/tokenomist/expansion", "headers": { "X-Tokenomist-Token": "probe" }, "timeout": 30 }] }],
+    "PreModelSwitch": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:47811/tokenomist/pre-model-switch", "headers": { "X-Tokenomist-Token": "probe" }, "timeout": 30 }] }],
+    "PostModelSwitch": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:47811/tokenomist/post-model-switch", "headers": { "X-Tokenomist-Token": "probe" }, "timeout": 30 }] }],
+    "SessionStart": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:47811/tokenomist/session-start", "headers": { "X-Tokenomist-Token": "probe" }, "timeout": 10 }] }]
+  }
+}

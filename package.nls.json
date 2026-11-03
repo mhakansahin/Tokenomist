@@ -1,0 +1,1 @@
+{ "description": "Picks a cheaper or stronger Claude model per Spec Kit spec, based on its complexity." }

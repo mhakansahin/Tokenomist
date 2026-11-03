@@ -48,7 +48,7 @@ Kaynaklar: Claude Code resmi dokümanları (code.claude.com/docs/en/settings, /m
 
 ## R4. Oturumun gerçek modelini bilmek
 
-**Decision**: Tokenomist oturum modelini tahmin eder, kesin bilgi olarak kullanmaz: `SessionStart` (varsa `model` alanı) ve `PostModelSwitch` (`to_model`) hook'ları oturum kimliğine göre son bilinen modeli kaydeder. Bilinmiyorsa kapı her zaman sorar.
+**Decision**: Tokenomist oturum modelini tahmin eder, kesin bilgi olarak kullanmaz: `PreModelSwitch` (`from_model`) ve `PostModelSwitch` (`to_model`) hook'ları oturum kimliğine göre son bilinen modeli kaydeder. Bilinmiyorsa kapı her zaman sorar. (`SessionStart` HTTP hook'u desteklenmiyor; bkz. Spike sonucu.)
 
 **Rationale**: Doküman `SessionStart`'ın `model` alanını "her zaman göndermediğini" söylüyor; açık bir `$CLAUDE_MODEL` değişkeni de yok.
 
@@ -120,3 +120,20 @@ Varsayılan eşikler: basit < 35 ≤ orta < 65 ≤ karmaşık; sınır payı 5 p
 - `UserPromptExpansion` ve `PreModelSwitch` görece yeni olaylar. Kurulu Claude Code sürümü bunları desteklemiyorsa (hook hiç çağrılmıyorsa) kapı devre dışı kalır, yalnızca dosya izleme + bildirim akışı çalışır. Entegrasyon testi ve quickstart S6 bunu doğrular.
 - `http` hook'larında `onFailure` alanı v2.1.295+ gerektirir. Tokenomist bu alanı yazmaz (varsayılan `continue`).
 - `allowedHttpHookUrls` managed ayarı tanımlıysa hook'lar çalışmaz. Durum status bar'da "kapı pasif" olarak gösterilir.
+
+## Spike sonucu (T006, 2026-11-03)
+
+Ortam: Claude Code CLI 2.1.316 (`claude -p`), Windows 11, geçici çalışma alanında `.claude/settings.local.json` + `tests/manual/hook-probe/probe.js`.
+
+| Olay (http hook) | Sonuç | Gözlem |
+|---|---|---|
+| `UserPromptExpansion` (`/speckit-plan`) | ✅ çağrıldı | Gövde: `command_name: "speckit-plan"`, `command_args`, `command_source: "projectSettings"`, `expansion_type: "slash_command"`, `prompt`, `session_id`, `cwd`. `{"decision":"block","reason":…}` prompt'u engelledi; kullanıcıya "UserPromptExpansion operation blocked by hook: <reason>" gösterildi; **model çağrısı yapılmadı (maliyet 0)** |
+| `PreModelSwitch` (`/model sonnet`) | ✅ çağrıldı | Gövde: `from_model: "claude-haiku-5-5"`, `to_model: "claude-sonnet-5-5"`, `requested_model: "sonnet"`, `source: "command"`. `permissionDecision: "deny"` geçişi engelledi, `systemMessage` kullanıcıya gösterildi |
+| `PostModelSwitch` | ⏸ doğrulanmadı | Geçiş engellendiği için tetiklenmedi; doküman tanımına güveniliyor |
+| `SessionStart` | ❌ desteklenmiyor | Debug: "HTTP hooks are not supported for SessionStart" |
+
+Tasarıma etkisi:
+- R4 güncellendi: oturum modeli yalnızca `PreModelSwitch.from_model` / `to_model` ve `PostModelSwitch.to_model` ile öğrenilir; `SessionStart` kaydı **kaldırıldı**. Bilinmeyen oturum modelinde kapı her zaman sorar.
+- Hook girdilerindeki model değerleri tam kimliktir (`claude-<aile>-<sürüm>`); Tokenomist aileyi (`haiku|sonnet|opus`) alt dizgiyle çıkarır, tanınmayan değerleri "bilinmiyor" sayar.
+- Not (test ortamı): Git Bash `"/speckit-plan"` argümanını yol olarak dönüştürür; elle denemelerde `MSYS_NO_PATHCONV=1` kullanılmalı.
+- T055 geri düşüşü gerekmiyor (kapılar çalışıyor); yalnızca hook'lar hiç çağrılmazsa devreye giren "kapı pasif" durumu korunur.
