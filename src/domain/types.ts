@@ -74,7 +74,8 @@ export interface LockSegment {
 export interface ModelLock {
   model: Model;
   recommendedModel: Model;
-  level: Level;
+  /** Absent when the spec could not be analysed and the user picked the model by hand. */
+  level?: Level;
   manualOverride: boolean;
   lockedAt: string;
   segments: LockSegment[];

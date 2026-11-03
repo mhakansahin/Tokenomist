@@ -1,0 +1,14 @@
+{
+  "complex/multi-tenant-billing.md": "complex",
+  "complex/offline-field-app.md": "complex",
+  "complex/realtime-chat.md": "complex",
+  "complex/tokenomist-spec-model-routing.md": "complex",
+  "medium/avatar-upload.md": "medium",
+  "medium/csv-export.md": "medium",
+  "medium/password-reset.md": "medium",
+  "medium/product-search-filters.md": "medium",
+  "simple/copy-order-number.md": "simple",
+  "simple/dark-mode-toggle.md": "simple",
+  "simple/footer-year.md": "simple",
+  "simple/rename-button.md": "simple"
+}

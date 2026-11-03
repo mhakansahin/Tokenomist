@@ -11,6 +11,7 @@ export interface MementoLike {
 const TRACKING_KEY = "tokenomist.tracking";
 const PENDING_KEY = "tokenomist.pendingWriting";
 const TOKEN_KEY = "tokenomist.hookToken";
+const KEY_WRITTEN_AT_KEY = "tokenomist.keyWrittenAt";
 
 export class TrackingStore {
   constructor(private readonly memento: MementoLike) {}
@@ -39,6 +40,15 @@ export class TrackingStore {
 
   async setPendingWriting(pending: PendingWriting | undefined): Promise<void> {
     await this.memento.update(PENDING_KEY, pending);
+  }
+
+  /** Epoch ms of Tokenomist's last write of the local `model` key (research.md R4). */
+  getKeyWrittenAt(): number | undefined {
+    return this.memento.get<number>(KEY_WRITTEN_AT_KEY);
+  }
+
+  async setKeyWrittenAt(epochMs: number): Promise<void> {
+    await this.memento.update(KEY_WRITTEN_AT_KEY, epochMs);
   }
 
   getHookToken(): string | undefined {

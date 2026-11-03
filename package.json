@@ -24,7 +24,7 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile",
-    "test": "node --test \"out/tests/unit/**/*.test.js\"",
+    "test": "node --test --test-timeout=30000 \"out/tests/unit/**/*.test.js\" \"out/tests/integration/*.test.js\"",
     "test:integration": "npm run compile && node ./out/tests/integration/runTests.js",
     "package": "vsce package --no-dependencies",
     "vscode:prepublish": "npm run compile",
