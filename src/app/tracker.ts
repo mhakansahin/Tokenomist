@@ -31,7 +31,7 @@ import { dominantModel, estimateSavings } from "../domain/savings";
 import { analyzeText } from "../domain/scoring";
 import { isComplete } from "../domain/tasksProgress";
 import { managesModelKey, transition, TrackingEvent } from "../domain/tracking";
-import { isModel, Mode, Model, modelFamily, SpecAnalysis, SpecSummary, SpecTracking } from "../domain/types";
+import { isModel, Mode, Model, modelFamily, PendingWriting, SpecAnalysis, SpecSummary, SpecTracking } from "../domain/types";
 
 export interface WorkspaceView {
   readonly root: string;
@@ -55,6 +55,7 @@ export interface TrackerUi {
   askUnlockedPlan(recommended: Model | undefined): Promise<"approve" | "change" | "continue" | undefined>;
   askSessionMismatch(locked: Model): Promise<"newConversation" | "continue" | undefined>;
   askOverride(locked: Model, target: Model | undefined): Promise<"update" | "revert" | undefined>;
+  askWriting(model: Model): Promise<"newConversation" | "continue" | undefined>;
   askFinish(specName: string): Promise<"finish" | "notYet" | undefined>;
   showSummary(summary: SpecSummary): void;
   warn(message: string): void;
@@ -76,6 +77,9 @@ export interface TrackerDeps {
 }
 
 export type PassiveReason = "settingsUnreadable";
+
+/** An unbound spec-writing intervention is undone after this long (data-model.md PendingWriting). */
+const PENDING_WRITING_TTL_MS = 24 * 3600_000;
 
 export const MODEL_LABEL: Readonly<Record<Model, string>> = { haiku: "Haiku", sonnet: "Sonnet", opus: "Opus" };
 
@@ -118,6 +122,7 @@ export class Tracker {
     const port = await this.server.start();
     this.lastFeatureDir = this.deps.workspace.activeFeature?.featureDir;
     await this.updateLocal((doc) => upsertTokenomistHooks(doc, port, token!));
+    await this.expirePendingWriting();
     await this.syncModelKey();
     this.emit();
     return { port, token };
@@ -131,21 +136,44 @@ export class Tracker {
 
   async onFeatureChanged(feature: ActiveFeature | undefined): Promise<void> {
     const { trackingStore } = this.deps;
+    await this.expirePendingWriting();
+    const pending = trackingStore.getPendingWriting();
     const previous = this.lastFeatureDir ? trackingStore.get(this.lastFeatureDir) : undefined;
     this.lastFeatureDir = feature?.featureDir;
     if (previous && previous.state !== "suspended") {
       await this.saveTransition(previous, { type: "suspend" });
-      if (previous.original) {
+      if (previous.original && !pending) {
         const original = previous.original.localModel;
         await this.updateLocal((doc) => restoreModel(doc, original), { modelKey: true });
       }
     }
     const next = feature ? trackingStore.get(feature.featureDir) : undefined;
-    if (next?.state === "suspended") {
+    let bound = false;
+    if (feature && pending && !next) {
+      // /speckit-specify created this feature: hand the writing-phase snapshot over to it.
+      const text = (await this.deps.workspace.readSpec(feature)) ?? "";
+      await trackingStore.save({
+        spec: { workspaceRoot: this.deps.workspace.root, featureDir: feature.featureDir, name: specName(text, feature.featureDir) },
+        state: "writing",
+        original: pending.original,
+        writingModel: pending.writingModel,
+        startedAt: pending.createdAt,
+      });
+      await trackingStore.setPendingWriting(undefined);
+      bound = true;
+    } else if (next?.state === "suspended") {
       await this.saveTransition(next, { type: "resume" });
-      await this.syncModelKey();
     }
+    await this.syncModelKey();
     this.emit();
+    if (bound && feature) {
+      // The spec may have been written before the watcher saw the new feature directory.
+      await this.onSpecSaved(feature);
+    }
+  }
+
+  pendingWriting(): PendingWriting | undefined {
+    return this.deps.trackingStore.getPendingWriting();
   }
 
   /** FR-004: re-analyse while the feature has no plan yet; a lock is never changed by this. */
@@ -158,6 +186,14 @@ export class Tracker {
       return;
     }
     await this.analyze(feature, { notify: true });
+  }
+
+  /** A changed mode or threshold re-computes a recommendation that is still awaiting approval. */
+  async onSettingsChanged(): Promise<void> {
+    const feature = this.deps.workspace.activeFeature;
+    if (feature && this.activeTracking()?.state === "awaitingApproval") {
+      await this.analyze(feature, { notify: true });
+    }
   }
 
   /** `tokenomist.analyzeSpec`: analyse on demand, plan or not (FR-024). */
@@ -325,10 +361,24 @@ export class Tracker {
     const command = body.command_name ?? "";
     switch (decision.kind) {
       case "allow":
-      // The spec-writing phase (FR-003) is handled by US3 (T050).
       case "startWriting":
-      case "askWriting":
+        await this.startWriting();
         return {};
+      case "askWriting": {
+        await this.startWriting();
+        if (sessions.isAcknowledged(body.session_id, "writing")) {
+          return {};
+        }
+        const answer = await ui.askWriting(decision.model);
+        if (answer !== "newConversation") {
+          sessions.acknowledge(body.session_id, "writing");
+          return {};
+        }
+        return this.blockForNewConversation(
+          signal,
+          t("Tokenomist set the spec-writing model to {0}. Run /{1} again in the new conversation.", MODEL_LABEL[decision.model], command),
+        );
+      }
       case "askUnlockedPlan": {
         const ackKey = `unlocked:${this.deps.workspace.activeFeature?.featureDir}`;
         if (sessions.isAcknowledged(body.session_id, ackKey)) {
@@ -496,10 +546,50 @@ export class Tracker {
     }
   }
 
+  // ------------------------------------------------------------------ spec writing (US3)
+
+  /** FR-003: remember the model from before Tokenomist's first intervention, then use the writing model. */
+  private async startWriting(): Promise<void> {
+    const { trackingStore } = this.deps;
+    await this.expirePendingWriting();
+    if (!trackingStore.getPendingWriting()) {
+      const local = await this.readLocalOrWarn();
+      if (!local) {
+        return;
+      }
+      const active = this.activeTracking();
+      const now = this.nowIso();
+      const original =
+        active?.original && managesModelKey(active.state)
+          ? active.original
+          : { localModel: takeKeySnapshot(local.doc), createdLocalFile: !local.exists, takenAt: now };
+      await trackingStore.setPendingWriting({ original, writingModel: this.deps.settings().writingModel, createdAt: now });
+    }
+    await this.syncModelKey();
+    this.emit();
+  }
+
+  private async expirePendingWriting(): Promise<void> {
+    const pending = this.deps.trackingStore.getPendingWriting();
+    if (!pending || this.nowMs() - Date.parse(pending.createdAt) < PENDING_WRITING_TTL_MS) {
+      return;
+    }
+    await this.deps.trackingStore.setPendingWriting(undefined);
+    const active = this.activeTracking();
+    if (!active || !managesModelKey(active.state)) {
+      await this.updateLocal((doc) => restoreModel(doc, pending.original.localModel), { modelKey: true });
+    }
+  }
+
   // ------------------------------------------------------------------ Claude Code settings
 
-  /** Makes the local `model` key match what the active tracking record wants. */
+  /** Makes the local `model` key match what the pending writing phase or the active record wants. */
   private async syncModelKey(): Promise<void> {
+    const pending = this.deps.trackingStore.getPendingWriting();
+    if (pending) {
+      await this.updateLocal((doc) => applyModel(doc, pending.writingModel), { modelKey: true });
+      return;
+    }
     const tracking = this.activeTracking();
     if (!tracking || !managesModelKey(tracking.state)) {
       return;
@@ -526,7 +616,7 @@ export class Tracker {
     }
     await this.deps.settingsStore.writeLocal(next);
     if (options.modelKey && next.model !== local.doc.model) {
-      await this.deps.trackingStore.setKeyWrittenAt((this.deps.now?.() ?? new Date()).getTime());
+      await this.deps.trackingStore.setKeyWrittenAt(this.nowMs());
     }
   }
 
@@ -558,6 +648,10 @@ export class Tracker {
 
   private nowIso(): string {
     return (this.deps.now?.() ?? new Date()).toISOString();
+  }
+
+  private nowMs(): number {
+    return (this.deps.now?.() ?? new Date()).getTime();
   }
 
   private emit(): void {

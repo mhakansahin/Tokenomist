@@ -1,6 +1,6 @@
 // Status bar item (FR-013; contracts/vscode-contributions.md "Status bar").
 import * as vscode from "vscode";
-import { SpecTracking } from "../domain/types";
+import { Model, SpecTracking } from "../domain/types";
 import { levelLabel, modelLabel, shorten } from "./labels";
 
 export type PassiveCause = "claudeMissing" | "noSpecKit" | "modelOverridden" | "settingsUnreadable";
@@ -9,6 +9,8 @@ export interface StatusView {
   passive?: PassiveCause;
   gateOffline?: boolean;
   tracking?: SpecTracking;
+  /** Set between /speckit-specify and the new feature directory appearing. */
+  pendingWritingModel?: Model;
 }
 
 export const SHOW_STATUS_COMMAND = "tokenomist.showStatusDetails";
@@ -63,6 +65,12 @@ function describe(view: StatusView): { text: string; tooltip: string; command?: 
     };
   }
   const tracking = view.tracking;
+  if (!tracking && view.pendingWritingModel) {
+    return {
+      text: `$(edit) Tokenomist · ${vscode.l10n.t("writing")} · ${modelLabel(view.pendingWritingModel)}`,
+      tooltip: vscode.l10n.t("The spec is being written."),
+    };
+  }
   if (!tracking) {
     return {
       text: "$(sparkle) Tokenomist",

@@ -4,13 +4,15 @@ import { ClaudeSettingsStore } from "./app/claudeSettingsStore";
 import { SessionModels } from "./app/sessionModels";
 import { SpecKitWatcher } from "./app/specKitWatcher";
 import { Tracker, TrackerSettings } from "./app/tracker";
-import { DEFAULT_THRESHOLDS } from "./domain/classification";
-import { isModel, Mode, MODES } from "./domain/types";
+import { DEFAULT_THRESHOLDS, Thresholds, writingModelFor } from "./domain/classification";
+import { resolveMode, resolveThresholds, ThresholdError } from "./domain/settingsValidation";
+import { isModel } from "./domain/types";
 import { SummaryStore } from "./persistence/summaryStore";
 import { TrackingStore } from "./persistence/trackingStore";
-import { askOverride, askSessionMismatch, askUnlockedPlan } from "./ui/gatePrompts";
+import { askOverride, askSessionMismatch, askUnlockedPlan, askWriting } from "./ui/gatePrompts";
 import { announceLock, announceRecommendation, pickModel } from "./ui/recommendation";
 import { passiveExplanation, PassiveCause, SHOW_STATUS_COMMAND, StatusBar } from "./ui/statusBar";
+import { openSetup } from "./ui/setup";
 import { askFinish, showSummaries, showSummary } from "./ui/summaries";
 
 const NEW_CONVERSATION_COMMAND = "claude-vscode.newConversation";
@@ -64,6 +66,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
     vscode.commands.registerCommand("tokenomist.showSummaries", () =>
       showSummaries(new SummaryStore(context.globalState).list()),
     ),
+    vscode.commands.registerCommand("tokenomist.openSetup", openSetup),
   );
 
   const passive = (cause: PassiveCause) => {
@@ -110,6 +113,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
       askUnlockedPlan,
       askSessionMismatch,
       askOverride,
+      askWriting,
       askFinish,
       showSummary,
       warn: (message) => void vscode.window.showWarningMessage(message),
@@ -126,12 +130,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
       passive: tracker?.passiveReason === "settingsUnreadable" ? "settingsUnreadable" : undefined,
       gateOffline,
       tracking: tracker?.activeTracking(),
+      pendingWritingModel: tracker?.pendingWriting()?.writingModel,
     });
   context.subscriptions.push(
     tracker.onDidChange(render),
     watcher.onFeatureChanged((feature) => void tracker?.onFeatureChanged(feature)),
     watcher.onSpecSaved((feature) => void tracker?.onSpecSaved(feature)),
     watcher.onTasksChanged((feature) => void tracker?.onTasksChanged(feature)),
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration("tokenomist")) {
+        readSettings({ warn: true });
+        void tracker?.onSettingsChanged();
+      }
+    }),
   );
   try {
     const { port } = await tracker.init();
@@ -162,15 +173,35 @@ export async function detectClaudeCode(): Promise<Detection> {
   });
 }
 
-/** Mode and thresholds; full validation and the writing model arrive with US3 (T048–T050). */
-function readSettings(): TrackerSettings {
+let lastValidThresholds: Thresholds = { ...DEFAULT_THRESHOLDS };
+
+/** FR-020, FR-021, FR-003: invalid thresholds are reported and the last valid ones stay in use. */
+function readSettings(options: { warn?: boolean } = {}): TrackerSettings {
   const config = vscode.workspace.getConfiguration("tokenomist");
-  const mode = config.get<string>("mode");
-  return {
-    mode: (MODES as readonly string[]).includes(mode ?? "") ? (mode as Mode) : "balanced",
-    thresholds: { ...DEFAULT_THRESHOLDS },
-    writingModel: "sonnet",
-  };
+  const mode = resolveMode(config.get("mode"));
+  const { thresholds, errors } = resolveThresholds(
+    { medium: config.get("thresholds.medium"), complex: config.get("thresholds.complex"), margin: config.get("borderlineMargin") },
+    lastValidThresholds,
+  );
+  if (errors.length === 0) {
+    lastValidThresholds = thresholds;
+  } else if (options.warn) {
+    void vscode.window.showErrorMessage(errors.map(thresholdErrorText).join(" "));
+  }
+  return { mode, thresholds, writingModel: writingModelFor(mode, config.get<boolean>("writingModel.followMode") === true) };
+}
+
+function thresholdErrorText(error: ThresholdError): string {
+  switch (error) {
+    case "mediumRange":
+      return vscode.l10n.t("The medium threshold must be between 1 and 98.");
+    case "complexRange":
+      return vscode.l10n.t("The complex threshold must be between 2 and 99.");
+    case "marginRange":
+      return vscode.l10n.t("The borderline margin must be between 0 and 20.");
+    case "order":
+      return vscode.l10n.t("The medium threshold must be lower than the complex threshold. The previous values stay in use.");
+  }
 }
 
 function explainPassive(cause: PassiveCause | undefined): void {

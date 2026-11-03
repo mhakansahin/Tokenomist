@@ -4,5 +4,14 @@
   "command.showRecommendation": "Model Önerisini Gör",
   "command.showStatusDetails": "Durum Ayrıntılarını Göster",
   "command.finishSpec": "Spec'i Bitir",
-  "command.showSummaries": "Kullanım Özetlerini Göster"
+  "command.showSummaries": "Kullanım Özetlerini Göster",
+  "command.openSetup": "İlk Ayarı Aç",
+  "config.mode": "Her spec karmaşıklık seviyesinin hangi modeli kullanacağı.",
+  "config.mode.saver": "Tasarruf: Basit → Haiku, Orta → Haiku, Karmaşık → Sonnet",
+  "config.mode.balanced": "Dengeli: Basit → Haiku, Orta → Sonnet, Karmaşık → Opus",
+  "config.mode.quality": "Kalite: Basit → Sonnet, Orta → Opus, Karmaşık → Opus",
+  "config.thresholds.medium": "Spec'in **orta** sayıldığı skor (0–100). Karmaşık eşiğinden küçük olmalıdır.",
+  "config.thresholds.complex": "Spec'in **karmaşık** sayıldığı skor (0–100).",
+  "config.borderlineMargin": "Bir eşiğin bu kadar puan altındaki skor güçlü modele yuvarlanır.",
+  "config.writingModel.followMode": "Spec'leri (specify, clarify) her zaman Sonnet yerine modun modeliyle yaz (Tasarruf → Haiku, Dengeli → Sonnet, Kalite → Opus)."
 }

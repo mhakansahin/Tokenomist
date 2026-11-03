@@ -128,17 +128,17 @@ description: "Task list for Spec Bazlı Model Yönlendirme (Tokenomist)"
 
 ### Tests (önce yaz)
 
-- [ ] T045 [P] [US3] `tests/unit/settingsValidation.test.ts`: `medium` 1–98, `complex` 2–99, `medium < complex`, `borderlineMargin` 0–20; geçersizde son geçerli değerler kullanılır (FR-021)
-- [ ] T046 [P] [US3] `tests/unit/writingModel.test.ts`: `followMode=false` → sonnet; `true` → saver=haiku, balanced=sonnet, quality=opus (FR-003)
-- [ ] T047 [US3] `tests/integration/writingPhase.test.ts`: sahte `/tokenomist/expansion` (`speckit-specify`) → çalışma alanı düzeyinde `pendingWriting` oluşur (snapshot + yazım modeli), local `model` = yazım modeli; ardından `.specify/feature.json` yeni dizine geçince `pendingWriting` o `featureDir`'in `SpecTracking` kaydına `writing` durumuyla bağlanır; zaten izlenen bir spec için specify çağrısı snapshot'ı yeniden almaz; `pendingWriting` 24 saat içinde bağlanmazsa local `model` snapshot'a döner ve kayıt silinir (FR-003, clarify Q2, data-model PendingWriting)
+- [x] T045 [P] [US3] `tests/unit/settingsValidation.test.ts`: `medium` 1–98, `complex` 2–99, `medium < complex`, `borderlineMargin` 0–20; geçersizde son geçerli değerler kullanılır (FR-021)
+- [x] T046 [P] [US3] `tests/unit/writingModel.test.ts`: `followMode=false` → sonnet; `true` → saver=haiku, balanced=sonnet, quality=opus (FR-003)
+- [x] T047 [US3] `tests/integration/writingPhase.test.ts`: sahte `/tokenomist/expansion` (`speckit-specify`) → çalışma alanı düzeyinde `pendingWriting` oluşur (snapshot + yazım modeli), local `model` = yazım modeli; ardından `.specify/feature.json` yeni dizine geçince `pendingWriting` o `featureDir`'in `SpecTracking` kaydına `writing` durumuyla bağlanır; zaten izlenen bir spec için specify çağrısı snapshot'ı yeniden almaz; `pendingWriting` 24 saat içinde bağlanmazsa local `model` snapshot'a döner ve kayıt silinir (FR-003, clarify Q2, data-model PendingWriting)
 
 ### Implementation
 
-- [ ] T048 [US3] `package.json` `contributes.configuration`: `tokenomist.mode` (enum `saver|balanced|quality`, varsayılan `balanced`), `tokenomist.thresholds.medium` (35), `tokenomist.thresholds.complex` (65), `tokenomist.borderlineMargin` (5), `tokenomist.writingModel.followMode` (false); `scope: "window"`; açıklamalar `%…%` ile yerelleştirilmiş (data-model.md ModeSettings)
-- [ ] T049 [P] [US3] `src/domain/settingsValidation.ts` ve `src/domain/classification.ts` içine `writingModelFor(mode, followMode)` (T045, T046)
-- [ ] T050 [US3] `src/app/tracker.ts` (yazım aşaması): expansion `speckit-specify` → aktif özellik zaten izleniyorsa yalnızca durum `writing`; değilse `pendingWriting` (snapshot, `applyModel(writingModel)`) oluştur ve `featureChanged` olayında yeni `featureDir`'e bağla, 24 saatte bağlanmazsa geri al; `src/persistence/trackingStore.ts`'e `pendingWriting` okuma/yazma ekle; `onDidChangeConfiguration` → geçersiz eşikte uyarı + son geçerli değer, geçerli değişiklikte `awaitingApproval` önerisini yeniden hesapla (FR-003, FR-020, FR-021)
-- [ ] T051 [US3] `src/ui/setup.ts`: `tokenomist.openSetup` — mod QuickPick'i, her mod için "Basit → X · Orta → Y · Karmaşık → Z" açıklaması, seçimde `tokenomist.mode` güncellenir; eşikler için "Ayarlarda düzenle" bağlantısı (`workbench.action.openSettings` `tokenomist.`) (FR-020)
-- [ ] T052 [US3] US3 komut/ayar metinlerini l10n dosyalarına ekle (FR-025)
+- [x] T048 [US3] `package.json` `contributes.configuration`: `tokenomist.mode` (enum `saver|balanced|quality`, varsayılan `balanced`), `tokenomist.thresholds.medium` (35), `tokenomist.thresholds.complex` (65), `tokenomist.borderlineMargin` (5), `tokenomist.writingModel.followMode` (false); `scope: "window"`; açıklamalar `%…%` ile yerelleştirilmiş (data-model.md ModeSettings)
+- [x] T049 [P] [US3] `src/domain/settingsValidation.ts` ve `src/domain/classification.ts` içine `writingModelFor(mode, followMode)` (T045, T046)
+- [x] T050 [US3] `src/app/tracker.ts` (yazım aşaması): expansion `speckit-specify` → her zaman `pendingWriting` (Spec Kit specify her çağrıda yeni özellik dizini açar; aktif kilitli bir spec varsa onun `original` anlık görüntüsü kullanılır, yeniden alınmaz) (snapshot, `applyModel(writingModel)`) oluştur ve `featureChanged` olayında yeni `featureDir`'e bağla, 24 saatte bağlanmazsa geri al; `src/persistence/trackingStore.ts`'e `pendingWriting` okuma/yazma ekle; `onDidChangeConfiguration` → geçersiz eşikte uyarı + son geçerli değer, geçerli değişiklikte `awaitingApproval` önerisini yeniden hesapla (FR-003, FR-020, FR-021)
+- [x] T051 [US3] `src/ui/setup.ts`: `tokenomist.openSetup` — mod QuickPick'i, her mod için "Basit → X · Orta → Y · Karmaşık → Z" açıklaması, seçimde `tokenomist.mode` güncellenir; eşikler için "Ayarlarda düzenle" bağlantısı (`workbench.action.openSettings` `tokenomist.`) (FR-020)
+- [x] T052 [US3] US3 komut/ayar metinlerini l10n dosyalarına ekle (FR-025)
 
 **Checkpoint**: quickstart S2–S4 geçer
 

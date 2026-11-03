@@ -40,6 +40,11 @@
         "category": "Tokenomist"
       },
       {
+        "command": "tokenomist.openSetup",
+        "title": "%command.openSetup%",
+        "category": "Tokenomist"
+      },
+      {
         "command": "tokenomist.showStatusDetails",
         "title": "%command.showStatusDetails%",
         "category": "Tokenomist"
@@ -52,6 +57,57 @@
           "when": "false"
         }
       ]
+    },
+    "configuration": {
+      "title": "Tokenomist",
+      "properties": {
+        "tokenomist.mode": {
+          "type": "string",
+          "enum": [
+            "saver",
+            "balanced",
+            "quality"
+          ],
+          "default": "balanced",
+          "scope": "window",
+          "enumDescriptions": [
+            "%config.mode.saver%",
+            "%config.mode.balanced%",
+            "%config.mode.quality%"
+          ],
+          "markdownDescription": "%config.mode%"
+        },
+        "tokenomist.thresholds.medium": {
+          "type": "number",
+          "default": 35,
+          "minimum": 1,
+          "maximum": 98,
+          "scope": "window",
+          "markdownDescription": "%config.thresholds.medium%"
+        },
+        "tokenomist.thresholds.complex": {
+          "type": "number",
+          "default": 65,
+          "minimum": 2,
+          "maximum": 99,
+          "scope": "window",
+          "markdownDescription": "%config.thresholds.complex%"
+        },
+        "tokenomist.borderlineMargin": {
+          "type": "number",
+          "default": 5,
+          "minimum": 0,
+          "maximum": 20,
+          "scope": "window",
+          "markdownDescription": "%config.borderlineMargin%"
+        },
+        "tokenomist.writingModel.followMode": {
+          "type": "boolean",
+          "default": false,
+          "scope": "window",
+          "markdownDescription": "%config.writingModel.followMode%"
+        }
+      }
     }
   },
   "scripts": {

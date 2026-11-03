@@ -3,7 +3,7 @@ import { promises as fs } from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { request } from "node:http";
-import { Tracker, TrackerUi, WorkspaceView } from "../../src/app/tracker";
+import { Tracker, TrackerDeps, TrackerSettings, TrackerUi, WorkspaceView } from "../../src/app/tracker";
 import { ClaudeSettingsStore } from "../../src/app/claudeSettingsStore";
 import { SessionModels } from "../../src/app/sessionModels";
 import { MementoLike, TrackingStore } from "../../src/persistence/trackingStore";
@@ -58,6 +58,7 @@ export class FakeUi implements TrackerUi {
   mismatchAnswer: Awaited<ReturnType<TrackerUi["askSessionMismatch"]>> = "newConversation";
   overrideAnswer: Awaited<ReturnType<TrackerUi["askOverride"]>> = "revert";
   finishAnswer: Awaited<ReturnType<TrackerUi["askFinish"]>> = "finish";
+  writingAnswer: Awaited<ReturnType<TrackerUi["askWriting"]>> = "continue";
   recommendationReady(analysis: SpecAnalysis): void {
     this.calls.push(`recommendationReady:${analysis.recommendedModel}`);
     this.recommendations.push(analysis);
@@ -80,6 +81,10 @@ export class FakeUi implements TrackerUi {
   async askOverride(locked: Model, target: Model | undefined) {
     this.calls.push(`askOverride:${locked}->${target}`);
     return this.overrideAnswer;
+  }
+  async askWriting(model: Model) {
+    this.calls.push(`askWriting:${model}`);
+    return this.writingAnswer;
   }
   async askFinish() {
     this.calls.push("askFinish");
@@ -108,19 +113,21 @@ export async function setup(options: { localSettings?: unknown } = {}) {
   const ui = new FakeUi();
   const newConversations: number[] = [];
   const settingsStore = new ClaudeSettingsStore(root, path.join(root, "user-settings.json"));
-  const makeTracker = () =>
+  const settings: TrackerSettings = { mode: "balanced", thresholds: { ...DEFAULT_THRESHOLDS }, writingModel: "sonnet" };
+  const makeTracker = (overrides: Partial<TrackerDeps> = {}) =>
     new Tracker({
       workspace,
       settingsStore,
       trackingStore: new TrackingStore(memento),
       summaryStore: new SummaryStore(globalMemento),
       sessions: new SessionModels(),
-      settings: () => ({ mode: "balanced", thresholds: { ...DEFAULT_THRESHOLDS }, writingModel: "sonnet" }),
+      settings: () => settings,
       ui,
       newConversation: async () => void newConversations.push(Date.now()),
       t: (message, ...args) => message.replace(/\{(\d+)\}/g, (_, i) => String(args[Number(i)])),
+      ...overrides,
     });
-  return { root, workspace, memento, ui, newConversations, settingsStore, makeTracker };
+  return { root, workspace, memento, ui, newConversations, settingsStore, settings, makeTracker };
 }
 
 export async function readLocal(root: string): Promise<Record<string, unknown> | undefined> {

@@ -4,5 +4,14 @@
   "command.showRecommendation": "Review Model Recommendation",
   "command.showStatusDetails": "Show Status Details",
   "command.finishSpec": "Finish Spec",
-  "command.showSummaries": "Show Usage Summaries"
+  "command.showSummaries": "Show Usage Summaries",
+  "command.openSetup": "Open Setup",
+  "config.mode": "Which model each spec complexity level gets.",
+  "config.mode.saver": "Saver: Simple → Haiku, Medium → Haiku, Complex → Sonnet",
+  "config.mode.balanced": "Balanced: Simple → Haiku, Medium → Sonnet, Complex → Opus",
+  "config.mode.quality": "Quality: Simple → Sonnet, Medium → Opus, Complex → Opus",
+  "config.thresholds.medium": "Score (0–100) from which a spec counts as **medium**. Must be lower than the complex threshold.",
+  "config.thresholds.complex": "Score (0–100) from which a spec counts as **complex**.",
+  "config.borderlineMargin": "A score this many points below a threshold is rounded up to the stronger model.",
+  "config.writingModel.followMode": "Write specs (specify, clarify) with the mode's model (Saver → Haiku, Balanced → Sonnet, Quality → Opus) instead of always Sonnet."
 }

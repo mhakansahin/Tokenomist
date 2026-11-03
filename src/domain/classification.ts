@@ -16,6 +16,13 @@ export const MODE_MAPPING: Readonly<Record<Mode, Readonly<Record<Level, Model>>>
   quality: { simple: "sonnet", medium: "opus", complex: "opus" },
 };
 
+const MODE_WRITING_MODEL: Readonly<Record<Mode, Model>> = { saver: "haiku", balanced: "sonnet", quality: "opus" };
+
+/** FR-003: Sonnet while the spec is written, or the mode's model when the user opts in. */
+export function writingModelFor(mode: Mode, followMode: boolean): Model {
+  return followMode ? MODE_WRITING_MODEL[mode] : "sonnet";
+}
+
 /** "Şüphede güçlü model": a score within `margin` below a threshold moves up one level. */
 export function classify(score: number, t: Thresholds): { level: Level; borderlineBumped: boolean } {
   if (score >= t.complex) {
