@@ -48,7 +48,7 @@ Kaynaklar: Claude Code resmi dokümanları (code.claude.com/docs/en/settings, /m
 
 ## R4. Oturumun gerçek modelini bilmek
 
-**Decision**: Tokenomist oturum modelini tahmin eder, kesin bilgi olarak kullanmaz: `PreModelSwitch` (`from_model`) ve `PostModelSwitch` (`to_model`) hook'ları oturum kimliğine göre son bilinen modeli kaydeder. Bilinmiyorsa kapı her zaman sorar. (`SessionStart` HTTP hook'u desteklenmiyor; bkz. Spike sonucu.)
+**Decision**: Tokenomist oturum modelini tahmin eder, kesin bilgi olarak kullanmaz: `PreModelSwitch` (`from_model`) ve `PostModelSwitch` (`to_model`) hook'ları oturum kimliğine göre son bilinen modeli kaydeder. Bilinmiyorsa kapı her zaman sorar. (`SessionStart` HTTP hook'u desteklenmiyor; bkz. Spike sonucu.) Ek kural (uygulamada eklendi): hook girdisindeki `transcript_path` dosyası Tokenomist'in local `model` anahtarını son yazdığı andan sonra oluşmuşsa (veya henüz yoksa) oturum o modelle başlamış sayılır. Kullanıcı bir oturum için kapıda "devam" dediyse aynı kilit için o oturuma tekrar sorulmaz.
 
 **Rationale**: Doküman `SessionStart`'ın `model` alanını "her zaman göndermediğini" söylüyor; açık bir `$CLAUDE_MODEL` değişkeni de yok.
 
@@ -89,8 +89,8 @@ Kaynaklar: Claude Code resmi dokümanları (code.claude.com/docs/en/settings, /m
 | Fonksiyonel gereksinim | `**FR-\d+**` | 2.0 | 25 |
 | Kullanıcı hikâyesi | `### User Story` | 4.0 | 6 |
 | Varlık/bileşen | Key Entities madde sayısı | 3.0 | 8 |
-| Harici entegrasyon | anahtar sözcük listesi (API, entegrasyon, servis, webhook, OAuth, ödeme, veritabanı, kuyruk, üçüncü taraf, …) | 5.0 | 6 |
-| Belirsizlik | `[NEEDS CLARIFICATION` + "belirsiz/TBD" | 4.0 | 5 |
+| Harici entegrasyon | farklı entegrasyon **kavramı** sayısı; her kavram TR/EN eş anlamlılarıyla bir kez sayılır (API, entegrasyon, webhook, OAuth/SSO, ödeme, veritabanı, kuyruk, üçüncü taraf, e-posta, SMS, push, harita, nesne depolama/CDN, gerçek zamanlı, ERP/CRM/GraphQL) | 5.0 | 6 |
+| Belirsizlik | `[NEEDS CLARIFICATION`, `TBD`, `???` ("belirsiz" kelimesi düz metinde sık geçtiği için sayılmaz) | 4.0 | 5 |
 | Uç durum | Edge Cases madde sayısı | 1.5 | 12 |
 
 Varsayılan eşikler: basit < 35 ≤ orta < 65 ≤ karmaşık; sınır payı 5 puan (FR-008: eşiğin 5 puan altındaki skor bir üst seviyeye çıkar). Ağırlıklar kod sabiti; eşikler ve sınır payı kullanıcı ayarı (FR-021). Gerekçe: en yüksek katkılı 3 sinyal.
@@ -137,3 +137,5 @@ Tasarıma etkisi:
 - Hook girdilerindeki model değerleri tam kimliktir (`claude-<aile>-<sürüm>`); Tokenomist aileyi (`haiku|sonnet|opus`) alt dizgiyle çıkarır, tanınmayan değerleri "bilinmiyor" sayar.
 - Not (test ortamı): Git Bash `"/speckit-plan"` argümanını yol olarak dönüştürür; elle denemelerde `MSYS_NO_PATHCONV=1` kullanılmalı.
 - T055 geri düşüşü gerekmiyor (kapılar çalışıyor); yalnızca hook'lar hiç çağrılmazsa devreye giren "kapı pasif" durumu korunur.
+
+Kalibrasyon (T021, 2026-11-03): `tests/fixtures/specs` içindeki 12 etiketli spec'in 12'si varsayılan eşiklerle etiketiyle aynı seviyede; bu deponun spec'i 62,3 puanla sınır payı sayesinde `complex`.

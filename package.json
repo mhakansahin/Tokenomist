@@ -18,7 +18,31 @@
     "workspaceContains:.specify/feature.json"
   ],
   "contributes": {
-    "commands": []
+    "commands": [
+      {
+        "command": "tokenomist.analyzeSpec",
+        "title": "%command.analyzeSpec%",
+        "category": "Tokenomist"
+      },
+      {
+        "command": "tokenomist.showRecommendation",
+        "title": "%command.showRecommendation%",
+        "category": "Tokenomist"
+      },
+      {
+        "command": "tokenomist.showStatusDetails",
+        "title": "%command.showStatusDetails%",
+        "category": "Tokenomist"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "tokenomist.showStatusDetails",
+          "when": "false"
+        }
+      ]
+    }
   },
   "scripts": {
     "compile": "tsc -p ./",
@@ -27,8 +51,7 @@
     "test": "node --test --test-timeout=30000 \"out/tests/unit/**/*.test.js\" \"out/tests/integration/*.test.js\"",
     "test:integration": "npm run compile && node ./out/tests/integration/runTests.js",
     "package": "vsce package --no-dependencies",
-    "vscode:prepublish": "npm run compile",
-    "vscode:uninstall": "node ./out/src/uninstall.js"
+    "vscode:prepublish": "npm run compile"
   },
   "devDependencies": {
     "@types/node": "^20.17.0",

@@ -1,1 +1,6 @@
-{ "description": "Spec Kit spec karmaşıklığına göre Claude modelini (ucuz veya güçlü) seçer." }
+{
+  "description": "Spec Kit spec karmaşıklığına göre Claude modelini (ucuz veya güçlü) seçer.",
+  "command.analyzeSpec": "Aktif Spec'i Analiz Et",
+  "command.showRecommendation": "Model Önerisini Gör",
+  "command.showStatusDetails": "Durum Ayrıntılarını Göster"
+}
