@@ -166,13 +166,13 @@ description: "Task list for Spec Bazlı Model Yönlendirme (Tokenomist)"
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T057 [P] `src/app/tracker.ts` + `package.json`: `tokenomist.cleanClaudeSettings` komutu — aktif kilit varsa onay ister, orijinal modeli geri yükler, `removeTokenomistHooks`, kullanıcı girdileri korunur (Kısıt 4, quickstart S15)
-- [ ] T058 [P] `src/uninstall.ts` + `package.json` `scripts.vscode:uninstall: node ./out/src/uninstall.js` (T001'den buraya taşındı; dosya yokken betik tanımlı olmasın): `vscode:uninstall` betiği — VS Code kullanıcı veri dizinindeki `workspaceStorage/*/workspace.json` kayıtlarından çalışma alanı köklerini bul, her birinin `.claude/settings.local.json` dosyasından Tokenomist hook girdilerini kaldır; vscode API kullanmaz, yalnızca `src/domain/claudeSettingsDoc.ts` (research R7)
-- [ ] T059 [P] `tests/unit/uninstall.test.ts`: geçici dizinde sahte workspaceStorage ile T058 davranışı
-- [ ] T060 [P] Tüm `vscode.l10n.t` anahtarlarının `l10n/bundle.l10n.tr.json` içinde karşılığı olduğunu doğrulayan `tests/unit/l10nCoverage.test.ts` (FR-025, quickstart S12)
-- [ ] T061 [P] Ağ erişimi denetimi: `tests/unit/noNetwork.test.ts` — `src/` altında `http.request`, `https`, `fetch`, `net.connect` kullanımının olmadığını, yalnızca `hookServer.ts` içinde `127.0.0.1` dinleyicisi bulunduğunu doğrula (FR-022)
-- [ ] T062 `README.md`: kurulum, modlar tablosu, "model yeni konuşmada geçerli olur" açıklaması, Claude Code ayarlarında hangi girdilerin yazıldığı ve temizleme komutu, gizlilik (telemetri yok)
-- [ ] T063 quickstart.md S1–S15'i elle çalıştır; sonuçları `specs/001-spec-model-routing/quickstart.md` sonuna "Doğrulama kaydı" olarak ekle
+- [x] T057 [P] `src/app/tracker.ts` + `package.json`: `tokenomist.cleanClaudeSettings` komutu — aktif kilit varsa onay ister, orijinal modeli geri yükler, `removeTokenomistHooks`, kullanıcı girdileri korunur (Kısıt 4, quickstart S15)
+- [x] T058 [P] `src/uninstall.ts` + `package.json` `scripts.vscode:uninstall: node ./out/src/uninstall.js` (T001'den buraya taşındı; dosya yokken betik tanımlı olmasın): `vscode:uninstall` betiği — **Uygulamada değişti:** `workspaceStorage` taraması yerine eklentinin global depolamasındaki `restore-ledger.json` (`src/app/restoreLedger.ts`) okunur; defter her çalışma alanında geri konacak `model` değerini de tuttuğu için kilit sürerken kaldırılan eklenti de orijinal modeli geri yükler — VS Code kullanıcı veri dizinindeki `workspaceStorage/*/workspace.json` kayıtlarından çalışma alanı köklerini bul, her birinin `.claude/settings.local.json` dosyasından Tokenomist hook girdilerini kaldır; vscode API kullanmaz, yalnızca `src/domain/claudeSettingsDoc.ts` (research R7)
+- [x] T059 [P] `tests/unit/uninstall.test.ts`: geçici dizinde sahte workspaceStorage ile T058 davranışı
+- [x] T060 [P] Tüm `vscode.l10n.t` anahtarlarının `l10n/bundle.l10n.tr.json` içinde karşılığı olduğunu doğrulayan `tests/unit/l10nCoverage.test.ts` (FR-025, quickstart S12)
+- [x] T061 [P] Ağ erişimi denetimi: `tests/unit/noNetwork.test.ts` — `src/` altında `http.request`, `https`, `fetch`, `net.connect` kullanımının olmadığını, yalnızca `hookServer.ts` içinde `127.0.0.1` dinleyicisi bulunduğunu doğrula (FR-022)
+- [x] T062 `README.md`: kurulum, modlar tablosu, "model yeni konuşmada geçerli olur" açıklaması, Claude Code ayarlarında hangi girdilerin yazıldığı ve temizleme komutu, gizlilik (telemetri yok)
+- [ ] T063 (kısmen yapıldı: bkz. quickstart.md "Doğrulama kaydı"; S2/S3 arayüz, S7, S12 elle bekliyor) quickstart.md S1–S15'i elle çalıştır; sonuçları `specs/001-spec-model-routing/quickstart.md` sonuna "Doğrulama kaydı" olarak ekle
 
 ---
 

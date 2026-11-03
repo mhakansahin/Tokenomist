@@ -44,3 +44,27 @@ Elle deneme: VS Code'da F5 ("Run Extension") → test çalışma alanını aç.
 - **Birim**: skor ve seviye (SC-005 fixture seti), eşik doğrulama, mod eşlemesi, tasarruf hesabı, settings.local.json birleştirme/geri yükleme, durum makinesi geçişleri, hook yanıt kararları (saf fonksiyon).
 - **Entegrasyon**: S1, S4–S6, S8 (HTTP uç noktalarına sahte hook POST'ları ile), S9, S10, S14, S15.
 - **Elle**: S7 (gerçek Claude Code oturumu), S12. Ayrıca Claude Code sürümünün `UserPromptExpansion` ve `PreModelSwitch` olaylarını gerçekten çağırdığı doğrulanır (research "Açık riskler").
+
+## Doğrulama kaydı (2026-11-03)
+
+Ortam: Windows 11, Claude Code CLI 2.1.316, VS Code test sürümü (`@vscode/test-electron`), Node 22.
+
+| # | Nasıl doğrulandı | Sonuç |
+|---|---|---|
+| S1 | VS Code oturumu, `claudeMissing` senaryosu (`tests/integration/suite/activation.ts`) | ✅ pasif, dosya yazılmadı |
+| S2 | Mod eşlemesi birim testi (`classification.test.ts`); QuickPick arayüzü elle denenmedi | ⏳ arayüz elle |
+| S3 | `settingsValidation.test.ts`; hata mesajının gösterimi elle denenmedi | ⏳ mesaj elle |
+| S4 | `tests/integration/writingPhase.test.ts` (gerçek dosyalar + hook sunucusu) | ✅ |
+| S5 | **Gerçek Claude Code CLI** + Tracker (`claude -p`), karmaşık fixture: skor 85,8 → Opus | ✅ |
+| S6 | **Gerçek CLI**: kilitsiz `/speckit-plan` → onay → prompt engellendi ("Tokenomist locked the model to Opus…"), local `model` = `opus`, maliyet 0 | ✅ |
+| S7 | `lockFlow.test.ts` (yeni oturum sorulmadan geçer); gerçek panelde elle denenmedi | ⏳ elle |
+| S8 | **Gerçek CLI**: kilitliyken `/model sonnet` → "Geri al" → geçiş engellendi ("Tokenomist kept the locked model Opus."), maliyet 0; "güncelle" yolu `lockFlow.test.ts` | ✅ |
+| S9 | `lockFlow.test.ts` "state survives a restart" | ✅ |
+| S10 | **Gerçek CLI** akışının sonunda `finish()` → `claude-opus-5-5[1m]` aynen geri geldi; onay sorusu `finishFlow.test.ts` | ✅ |
+| S11 | `finishFlow.test.ts`, `savings.test.ts` | ✅ |
+| S12 | `l10nCoverage.test.ts` (86 metnin hepsi TR); dil değişimi elle denenmedi | ⏳ elle |
+| S13 | VS Code oturumu, `modelOverridden` senaryosu | ✅ |
+| S14 | `lockFlow.test.ts` "a broken settings.local.json is never overwritten" | ✅ |
+| S15 | `cleanup.test.ts`, `uninstall.test.ts` | ✅ |
+
+Açık: S2, S3 (arayüz kısmı), S7 ve S12, eklentiyi F5 ile gerçek Claude Code paneliyle açıp elle denenmeli.

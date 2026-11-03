@@ -6,6 +6,7 @@ import { createHash, randomBytes } from "node:crypto";
 import * as path from "node:path";
 import type { ActiveFeature } from "./specKitWatcher";
 import { ClaudeSettingsStore } from "./claudeSettingsStore";
+import { LedgerEntry, RestoreLedger } from "./restoreLedger";
 import { HookBody, HookServer } from "./hookServer";
 import { resolveSessionModel, SessionModels, transcriptCreatedAt } from "./sessionModels";
 import { TrackingStore } from "../persistence/trackingStore";
@@ -14,6 +15,7 @@ import { recommend, Thresholds } from "../domain/classification";
 import {
   applyModel,
   isEmptySettings,
+  removeTokenomistHooks,
   restoreModel,
   SettingsDoc,
   SettingsParseError,
@@ -31,7 +33,7 @@ import { dominantModel, estimateSavings } from "../domain/savings";
 import { analyzeText } from "../domain/scoring";
 import { isComplete } from "../domain/tasksProgress";
 import { managesModelKey, transition, TrackingEvent } from "../domain/tracking";
-import { isModel, Mode, Model, modelFamily, PendingWriting, SpecAnalysis, SpecSummary, SpecTracking } from "../domain/types";
+import { isModel, KeySnapshot, Mode, Model, modelFamily, PendingWriting, SpecAnalysis, SpecSummary, SpecTracking } from "../domain/types";
 
 export interface WorkspaceView {
   readonly root: string;
@@ -57,6 +59,8 @@ export interface TrackerUi {
   askOverride(locked: Model, target: Model | undefined): Promise<"update" | "revert" | undefined>;
   askWriting(model: Model): Promise<"newConversation" | "continue" | undefined>;
   askFinish(specName: string): Promise<"finish" | "notYet" | undefined>;
+  confirmCleanup(): Promise<boolean>;
+  info(message: string): void;
   showSummary(summary: SpecSummary): void;
   warn(message: string): void;
 }
@@ -66,6 +70,7 @@ export interface TrackerDeps {
   settingsStore: ClaudeSettingsStore;
   trackingStore: TrackingStore;
   summaryStore: SummaryStore;
+  ledger: RestoreLedger;
   sessions: SessionModels;
   settings(): TrackerSettings;
   ui: TrackerUi;
@@ -121,7 +126,9 @@ export class Tracker {
     });
     const port = await this.server.start();
     this.lastFeatureDir = this.deps.workspace.activeFeature?.featureDir;
-    await this.updateLocal((doc) => upsertTokenomistHooks(doc, port, token!));
+    if (await this.updateLocal((doc) => upsertTokenomistHooks(doc, port, token!))) {
+      await trackingStore.setCreatedLocalFile(true);
+    }
     await this.expirePendingWriting();
     await this.syncModelKey();
     this.emit();
@@ -324,9 +331,47 @@ export class Tracker {
     };
     await summaryStore.add(summary);
     await trackingStore.delete(tracking.spec.featureDir);
+    await this.updateLedger();
     this.emit();
     this.deps.ui.showSummary(summary);
     return summary;
+  }
+
+  /** `tokenomist.cleanClaudeSettings` (constitution Kısıt 4, quickstart S15). */
+  async cleanClaudeSettings(): Promise<boolean> {
+    const { trackingStore, settingsStore, ledger, workspace, ui, t } = this.deps;
+    const owned = this.currentRestore();
+    const tracking = this.activeTracking();
+    if ((owned || tracking?.lock) && !(await ui.confirmCleanup())) {
+      return false;
+    }
+    const local = await this.readLocalOrWarn();
+    if (!local) {
+      return false;
+    }
+    let next = removeTokenomistHooks(local.doc);
+    if (owned) {
+      next = restoreModel(next, owned);
+    }
+    if (trackingStore.getCreatedLocalFile() && isEmptySettings(next)) {
+      await settingsStore.deleteLocal();
+    } else if (JSON.stringify(next) !== JSON.stringify(local.doc)) {
+      await settingsStore.writeLocal(next);
+    }
+    if (tracking?.original?.userModel) {
+      await settingsStore.restoreUserModel(tracking.original.userModel);
+    }
+    for (const record of trackingStore.all()) {
+      await trackingStore.delete(record.spec.featureDir);
+    }
+    await trackingStore.setPendingWriting(undefined);
+    await trackingStore.setCreatedLocalFile(false);
+    await ledger.remove(workspace.root);
+    this.emit();
+    ui.info(
+      t("Tokenomist removed its entries from Claude Code settings. They come back the next time this workspace opens unless the extension is disabled."),
+    );
+    return true;
   }
 
   summaries(): SpecSummary[] {
@@ -579,12 +624,40 @@ export class Tracker {
     if (!active || !managesModelKey(active.state)) {
       await this.updateLocal((doc) => restoreModel(doc, pending.original.localModel), { modelKey: true });
     }
+    await this.updateLedger();
   }
 
   // ------------------------------------------------------------------ Claude Code settings
 
-  /** Makes the local `model` key match what the pending writing phase or the active record wants. */
+  /** Makes the local `model` key match what is wanted now and records how to undo it. */
   private async syncModelKey(): Promise<void> {
+    await this.applyModelKey();
+    await this.updateLedger();
+  }
+
+  /** The `model` value to put back if Tokenomist stopped now; undefined when it does not own the key. */
+  private currentRestore(): KeySnapshot | undefined {
+    const pending = this.deps.trackingStore.getPendingWriting();
+    if (pending) {
+      return pending.original.localModel;
+    }
+    const tracking = this.activeTracking();
+    if (tracking && managesModelKey(tracking.state) && (tracking.lock || tracking.writingModel)) {
+      return tracking.original?.localModel;
+    }
+    return undefined;
+  }
+
+  private async updateLedger(): Promise<void> {
+    const restore = this.currentRestore();
+    const entry: LedgerEntry = {
+      ...(restore ? { restore } : {}),
+      ...(this.deps.trackingStore.getCreatedLocalFile() ? { createdFile: true } : {}),
+    };
+    await this.deps.ledger.record(this.deps.workspace.root, entry);
+  }
+
+  private async applyModelKey(): Promise<void> {
     const pending = this.deps.trackingStore.getPendingWriting();
     if (pending) {
       await this.updateLocal((doc) => applyModel(doc, pending.writingModel), { modelKey: true });
@@ -605,19 +678,21 @@ export class Tracker {
     await this.updateLocal((doc) => (wanted ? applyModel(doc, wanted) : restoreModel(doc, original!)), { modelKey: true });
   }
 
-  private async updateLocal(change: (doc: SettingsDoc) => SettingsDoc, options: { modelKey?: boolean } = {}): Promise<void> {
+  /** Returns true when the write created the file. */
+  private async updateLocal(change: (doc: SettingsDoc) => SettingsDoc, options: { modelKey?: boolean } = {}): Promise<boolean> {
     const local = await this.readLocalOrWarn();
     if (!local) {
-      return;
+      return false;
     }
     const next = change(local.doc);
     if (JSON.stringify(next) === JSON.stringify(local.doc)) {
-      return;
+      return false;
     }
-    await this.deps.settingsStore.writeLocal(next);
+    const created = await this.deps.settingsStore.writeLocal(next);
     if (options.modelKey && next.model !== local.doc.model) {
       await this.deps.trackingStore.setKeyWrittenAt(this.nowMs());
     }
+    return created;
   }
 
   private async readLocalOrWarn(): Promise<{ doc: SettingsDoc; exists: boolean } | undefined> {

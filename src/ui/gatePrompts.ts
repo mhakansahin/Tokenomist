@@ -3,6 +3,16 @@ import * as vscode from "vscode";
 import { Model } from "../domain/types";
 import { modelLabel } from "./labels";
 
+export async function confirmCleanup(): Promise<boolean> {
+  const remove = vscode.l10n.t("Remove and restore");
+  const answer = await vscode.window.showWarningMessage(
+    vscode.l10n.t("A spec model is active. Remove Tokenomist from Claude Code settings and restore your original model?"),
+    { modal: true },
+    remove,
+  );
+  return answer === remove;
+}
+
 export async function askWriting(model: Model): Promise<"newConversation" | "continue" | undefined> {
   const open = vscode.l10n.t("Start in a new conversation");
   const proceed = vscode.l10n.t("Continue in this conversation");

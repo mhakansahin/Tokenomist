@@ -13,5 +13,6 @@
   "config.thresholds.medium": "Score (0–100) from which a spec counts as **medium**. Must be lower than the complex threshold.",
   "config.thresholds.complex": "Score (0–100) from which a spec counts as **complex**.",
   "config.borderlineMargin": "A score this many points below a threshold is rounded up to the stronger model.",
-  "config.writingModel.followMode": "Write specs (specify, clarify) with the mode's model (Saver → Haiku, Balanced → Sonnet, Quality → Opus) instead of always Sonnet."
+  "config.writingModel.followMode": "Write specs (specify, clarify) with the mode's model (Saver → Haiku, Balanced → Sonnet, Quality → Opus) instead of always Sonnet.",
+  "command.cleanClaudeSettings": "Remove Tokenomist from Claude Code Settings"
 }

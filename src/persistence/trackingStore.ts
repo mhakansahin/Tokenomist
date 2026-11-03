@@ -12,6 +12,7 @@ const TRACKING_KEY = "tokenomist.tracking";
 const PENDING_KEY = "tokenomist.pendingWriting";
 const TOKEN_KEY = "tokenomist.hookToken";
 const KEY_WRITTEN_AT_KEY = "tokenomist.keyWrittenAt";
+const CREATED_LOCAL_FILE_KEY = "tokenomist.createdLocalFile";
 
 export class TrackingStore {
   constructor(private readonly memento: MementoLike) {}
@@ -49,6 +50,15 @@ export class TrackingStore {
 
   async setKeyWrittenAt(epochMs: number): Promise<void> {
     await this.memento.update(KEY_WRITTEN_AT_KEY, epochMs);
+  }
+
+  /** Tokenomist created .claude/settings.local.json in this workspace. */
+  getCreatedLocalFile(): boolean {
+    return this.memento.get<boolean>(CREATED_LOCAL_FILE_KEY) === true;
+  }
+
+  async setCreatedLocalFile(created: boolean): Promise<void> {
+    await this.memento.update(CREATED_LOCAL_FILE_KEY, created || undefined);
   }
 
   getHookToken(): string | undefined {

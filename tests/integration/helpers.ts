@@ -10,6 +10,7 @@ import { MementoLike, TrackingStore } from "../../src/persistence/trackingStore"
 import { DEFAULT_THRESHOLDS } from "../../src/domain/classification";
 import { Model, SpecAnalysis, SpecSummary } from "../../src/domain/types";
 import { SummaryStore } from "../../src/persistence/summaryStore";
+import { RestoreLedger } from "../../src/app/restoreLedger";
 
 export const COMPLEX_SPEC = path.resolve(__dirname, "../../../tests/fixtures/specs/complex/realtime-chat.md");
 
@@ -59,6 +60,7 @@ export class FakeUi implements TrackerUi {
   overrideAnswer: Awaited<ReturnType<TrackerUi["askOverride"]>> = "revert";
   finishAnswer: Awaited<ReturnType<TrackerUi["askFinish"]>> = "finish";
   writingAnswer: Awaited<ReturnType<TrackerUi["askWriting"]>> = "continue";
+  confirmCleanupAnswer = true;
   recommendationReady(analysis: SpecAnalysis): void {
     this.calls.push(`recommendationReady:${analysis.recommendedModel}`);
     this.recommendations.push(analysis);
@@ -93,6 +95,13 @@ export class FakeUi implements TrackerUi {
   showSummary(summary: SpecSummary): void {
     this.calls.push(`showSummary:${summary.usedModel}`);
   }
+  async confirmCleanup() {
+    this.calls.push("confirmCleanup");
+    return this.confirmCleanupAnswer;
+  }
+  info(message: string): void {
+    this.calls.push(`info:${message}`);
+  }
   warn(message: string): void {
     this.calls.push(`warn:${message}`);
   }
@@ -110,6 +119,7 @@ export async function setup(options: { localSettings?: unknown } = {}) {
   await workspace.writeSpec(await fs.readFile(COMPLEX_SPEC, "utf8"));
   const memento = new MemoryMemento();
   const globalMemento = new MemoryMemento();
+  const ledger = new RestoreLedger(path.join(root, ".tokenomist-global", "restore-ledger.json"));
   const ui = new FakeUi();
   const newConversations: number[] = [];
   const settingsStore = new ClaudeSettingsStore(root, path.join(root, "user-settings.json"));
@@ -120,6 +130,7 @@ export async function setup(options: { localSettings?: unknown } = {}) {
       settingsStore,
       trackingStore: new TrackingStore(memento),
       summaryStore: new SummaryStore(globalMemento),
+      ledger,
       sessions: new SessionModels(),
       settings: () => settings,
       ui,
@@ -127,7 +138,7 @@ export async function setup(options: { localSettings?: unknown } = {}) {
       t: (message, ...args) => message.replace(/\{(\d+)\}/g, (_, i) => String(args[Number(i)])),
       ...overrides,
     });
-  return { root, workspace, memento, ui, newConversations, settingsStore, settings, makeTracker };
+  return { root, workspace, memento, ui, newConversations, settingsStore, settings, ledger, makeTracker };
 }
 
 export async function readLocal(root: string): Promise<Record<string, unknown> | undefined> {

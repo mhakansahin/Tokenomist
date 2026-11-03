@@ -1,6 +1,8 @@
+import * as path from "node:path";
 import * as vscode from "vscode";
 import { CLAUDE_CODE_EXTENSION_ID, Detection, detect, readManagedSettings } from "./app/claudeDetector";
 import { ClaudeSettingsStore } from "./app/claudeSettingsStore";
+import { LEDGER_FILE, RestoreLedger } from "./app/restoreLedger";
 import { SessionModels } from "./app/sessionModels";
 import { SpecKitWatcher } from "./app/specKitWatcher";
 import { Tracker, TrackerSettings } from "./app/tracker";
@@ -9,7 +11,7 @@ import { resolveMode, resolveThresholds, ThresholdError } from "./domain/setting
 import { isModel } from "./domain/types";
 import { SummaryStore } from "./persistence/summaryStore";
 import { TrackingStore } from "./persistence/trackingStore";
-import { askOverride, askSessionMismatch, askUnlockedPlan, askWriting } from "./ui/gatePrompts";
+import { askOverride, askSessionMismatch, askUnlockedPlan, askWriting, confirmCleanup } from "./ui/gatePrompts";
 import { announceLock, announceRecommendation, pickModel } from "./ui/recommendation";
 import { passiveExplanation, PassiveCause, SHOW_STATUS_COMMAND, StatusBar } from "./ui/statusBar";
 import { openSetup } from "./ui/setup";
@@ -70,6 +72,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
       showSummaries(new SummaryStore(context.globalState).list()),
     ),
     vscode.commands.registerCommand("tokenomist.openSetup", openSetup),
+    vscode.commands.registerCommand("tokenomist.cleanClaudeSettings", async () => {
+      if (!tracker) {
+        return explainPassive(status.current.passive);
+      }
+      await tracker.cleanClaudeSettings();
+    }),
   );
 
   const passive = (cause: PassiveCause) => {
@@ -112,6 +120,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
     settingsStore: new ClaudeSettingsStore(folder.uri.fsPath),
     trackingStore: new TrackingStore(context.workspaceState),
     summaryStore: new SummaryStore(context.globalState),
+    ledger: new RestoreLedger(path.join(context.globalStorageUri.fsPath, LEDGER_FILE)),
     sessions,
     settings: readSettings,
     ui: {
@@ -124,6 +133,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
       askWriting,
       askFinish,
       showSummary,
+      confirmCleanup,
+      info: (message) => void vscode.window.showInformationMessage(message),
       warn: (message) => void vscode.window.showWarningMessage(message),
     },
     newConversation: startNewConversation,

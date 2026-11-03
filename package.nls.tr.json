@@ -13,5 +13,6 @@
   "config.thresholds.medium": "Spec'in **orta** sayıldığı skor (0–100). Karmaşık eşiğinden küçük olmalıdır.",
   "config.thresholds.complex": "Spec'in **karmaşık** sayıldığı skor (0–100).",
   "config.borderlineMargin": "Bir eşiğin bu kadar puan altındaki skor güçlü modele yuvarlanır.",
-  "config.writingModel.followMode": "Spec'leri (specify, clarify) her zaman Sonnet yerine modun modeliyle yaz (Tasarruf → Haiku, Dengeli → Sonnet, Kalite → Opus)."
+  "config.writingModel.followMode": "Spec'leri (specify, clarify) her zaman Sonnet yerine modun modeliyle yaz (Tasarruf → Haiku, Dengeli → Sonnet, Kalite → Opus).",
+  "command.cleanClaudeSettings": "Claude Code Ayarlarını Temizle"
 }
