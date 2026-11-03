@@ -8,7 +8,8 @@ import { ClaudeSettingsStore } from "../../src/app/claudeSettingsStore";
 import { SessionModels } from "../../src/app/sessionModels";
 import { MementoLike, TrackingStore } from "../../src/persistence/trackingStore";
 import { DEFAULT_THRESHOLDS } from "../../src/domain/classification";
-import { Model, SpecAnalysis } from "../../src/domain/types";
+import { Model, SpecAnalysis, SpecSummary } from "../../src/domain/types";
+import { SummaryStore } from "../../src/persistence/summaryStore";
 
 export const COMPLEX_SPEC = path.resolve(__dirname, "../../../tests/fixtures/specs/complex/realtime-chat.md");
 
@@ -56,6 +57,7 @@ export class FakeUi implements TrackerUi {
   unlockedPlanAnswer: Awaited<ReturnType<TrackerUi["askUnlockedPlan"]>> = "approve";
   mismatchAnswer: Awaited<ReturnType<TrackerUi["askSessionMismatch"]>> = "newConversation";
   overrideAnswer: Awaited<ReturnType<TrackerUi["askOverride"]>> = "revert";
+  finishAnswer: Awaited<ReturnType<TrackerUi["askFinish"]>> = "finish";
   recommendationReady(analysis: SpecAnalysis): void {
     this.calls.push(`recommendationReady:${analysis.recommendedModel}`);
     this.recommendations.push(analysis);
@@ -79,6 +81,13 @@ export class FakeUi implements TrackerUi {
     this.calls.push(`askOverride:${locked}->${target}`);
     return this.overrideAnswer;
   }
+  async askFinish() {
+    this.calls.push("askFinish");
+    return this.finishAnswer;
+  }
+  showSummary(summary: SpecSummary): void {
+    this.calls.push(`showSummary:${summary.usedModel}`);
+  }
   warn(message: string): void {
     this.calls.push(`warn:${message}`);
   }
@@ -95,6 +104,7 @@ export async function setup(options: { localSettings?: unknown } = {}) {
   await workspace.setActive("specs/001-chat");
   await workspace.writeSpec(await fs.readFile(COMPLEX_SPEC, "utf8"));
   const memento = new MemoryMemento();
+  const globalMemento = new MemoryMemento();
   const ui = new FakeUi();
   const newConversations: number[] = [];
   const settingsStore = new ClaudeSettingsStore(root, path.join(root, "user-settings.json"));
@@ -103,6 +113,7 @@ export async function setup(options: { localSettings?: unknown } = {}) {
       workspace,
       settingsStore,
       trackingStore: new TrackingStore(memento),
+      summaryStore: new SummaryStore(globalMemento),
       sessions: new SessionModels(),
       settings: () => ({ mode: "balanced", thresholds: { ...DEFAULT_THRESHOLDS }, writingModel: "sonnet" }),
       ui,

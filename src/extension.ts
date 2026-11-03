@@ -6,10 +6,12 @@ import { SpecKitWatcher } from "./app/specKitWatcher";
 import { Tracker, TrackerSettings } from "./app/tracker";
 import { DEFAULT_THRESHOLDS } from "./domain/classification";
 import { isModel, Mode, MODES } from "./domain/types";
+import { SummaryStore } from "./persistence/summaryStore";
 import { TrackingStore } from "./persistence/trackingStore";
 import { askOverride, askSessionMismatch, askUnlockedPlan } from "./ui/gatePrompts";
 import { announceLock, announceRecommendation, pickModel } from "./ui/recommendation";
 import { passiveExplanation, PassiveCause, SHOW_STATUS_COMMAND, StatusBar } from "./ui/statusBar";
+import { askFinish, showSummaries, showSummary } from "./ui/summaries";
 
 const NEW_CONVERSATION_COMMAND = "claude-vscode.newConversation";
 
@@ -52,6 +54,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
       }
       await tracker.review(isModel(model) ? model : undefined);
     }),
+    vscode.commands.registerCommand("tokenomist.finishSpec", async () => {
+      if (!tracker) {
+        return explainPassive(status.current.passive);
+      }
+      await tracker.requestFinish();
+    }),
+    // Summaries live in globalState, so they are available even in passive workspaces (FR-019).
+    vscode.commands.registerCommand("tokenomist.showSummaries", () =>
+      showSummaries(new SummaryStore(context.globalState).list()),
+    ),
   );
 
   const passive = (cause: PassiveCause) => {
@@ -88,6 +100,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
     workspace: watcher,
     settingsStore: new ClaudeSettingsStore(folder.uri.fsPath),
     trackingStore: new TrackingStore(context.workspaceState),
+    summaryStore: new SummaryStore(context.globalState),
     sessions,
     settings: readSettings,
     ui: {
@@ -97,6 +110,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
       askUnlockedPlan,
       askSessionMismatch,
       askOverride,
+      askFinish,
+      showSummary,
       warn: (message) => void vscode.window.showWarningMessage(message),
     },
     newConversation: startNewConversation,
@@ -116,6 +131,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
     tracker.onDidChange(render),
     watcher.onFeatureChanged((feature) => void tracker?.onFeatureChanged(feature)),
     watcher.onSpecSaved((feature) => void tracker?.onSpecSaved(feature)),
+    watcher.onTasksChanged((feature) => void tracker?.onTasksChanged(feature)),
   );
   try {
     const { port } = await tracker.init();

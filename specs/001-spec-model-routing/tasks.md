@@ -104,17 +104,17 @@ description: "Task list for Spec Bazlı Model Yönlendirme (Tokenomist)"
 
 ### Tests (önce yaz)
 
-- [ ] T037 [P] [US2] `tests/unit/savings.test.ts`: ağırlıklar haiku 0.2 / sonnet 0.6 / opus 1.0; tek segment Opus → %0, Sonnet → %40, Haiku → %80; çok segmentte süreyle ağırlıklı ortalama; `usedModel` = süreyle baskın model; Dengeli + eşit dağılım fixture → ortalama ≥ %40 (FR-018, SC-006)
-- [ ] T038 [P] [US2] `tests/unit/summaryStore.test.ts`: en fazla 500 kayıt, FIFO; `id = workspaceRoot#featureDir#completedAt` (FR-019)
-- [ ] T039 [US2] `tests/integration/finishFlow.test.ts`: tüm görevler `[x]` → `completionPending` + istek; reddet → `locked`; onayla → `restoreModel` (snapshot `present:false` ise `model` silinir; `createdLocalFile` ve dosya boşsa dosya silinir), `userModel` snapshot varsa user `model` geri konur; özet `globalState`'e yazılır; `tokenomist.finishSpec` elle de çalışır (FR-015, FR-016, FR-017, SC-003)
+- [x] T037 [P] [US2] `tests/unit/savings.test.ts`: ağırlıklar haiku 0.2 / sonnet 0.6 / opus 1.0; tek segment Opus → %0, Sonnet → %40, Haiku → %80; çok segmentte süreyle ağırlıklı ortalama; `usedModel` = süreyle baskın model; Dengeli + eşit dağılım fixture → ortalama ≥ %40 (FR-018, SC-006)
+- [x] T038 [P] [US2] `tests/unit/summaryStore.test.ts`: en fazla 500 kayıt, FIFO; `id = workspaceRoot#featureDir#completedAt` (FR-019)
+- [x] T039 [US2] `tests/integration/finishFlow.test.ts`: tüm görevler `[x]` → `completionPending` + istek; reddet → `locked`; onayla → `restoreModel` (snapshot `present:false` ise `model` silinir; `createdLocalFile` ve dosya boşsa dosya silinir), `userModel` snapshot varsa user `model` geri konur; özet `globalState`'e yazılır; `tokenomist.finishSpec` elle de çalışır (FR-015, FR-016, FR-017, SC-003)
 
 ### Implementation
 
-- [ ] T040 [P] [US2] `src/domain/savings.ts`: `MODEL_WEIGHT` sabit tablosu, `estimateSavings(segments)`, `dominantModel(segments)` (T037)
-- [ ] T041 [P] [US2] `src/persistence/summaryStore.ts`: `globalState`, 500 FIFO (T038)
-- [ ] T042 [US2] `src/app/tracker.ts` (bitiş kısmı): `tasksChanged` + `isComplete` → `completionPending` + bildirim [Spec'i bitir] [Henüz değil]; `finish()` → segment kapat, `restoreModel`, `SpecSummary` oluştur ve kaydet, tracking kaydını sil (FR-015, FR-016, FR-017)
-- [ ] T043 [P] [US2] `src/ui/summaries.ts`: bitiş sonrası özet bildirimi (spec, seviye, önerilen/kullanılan model, elle değiştirildi, tahmini tasarruf %) ve `tokenomist.showSummaries` için en yeni üstte QuickPick/webview'siz liste (FR-017, FR-019)
-- [ ] T044 [US2] `package.json` + `src/extension.ts`: `tokenomist.finishSpec`, `tokenomist.showSummaries` komutları; US2 metinlerini l10n dosyalarına ekle (FR-025)
+- [x] T040 [P] [US2] `src/domain/savings.ts`: `MODEL_WEIGHT` sabit tablosu, `estimateSavings(segments)`, `dominantModel(segments)` (T037)
+- [x] T041 [P] [US2] `src/persistence/summaryStore.ts`: `globalState`, 500 FIFO (T038)
+- [x] T042 [US2] `src/app/tracker.ts` (bitiş kısmı): `tasksChanged` + `isComplete` → `completionPending` + bildirim [Spec'i bitir] [Henüz değil]; `finish()` → segment kapat, `restoreModel`, `SpecSummary` oluştur ve kaydet, tracking kaydını sil (FR-015, FR-016, FR-017)
+- [x] T043 [P] [US2] `src/ui/summaries.ts`: bitiş sonrası özet bildirimi (spec, seviye, önerilen/kullanılan model, elle değiştirildi, tahmini tasarruf %) ve `tokenomist.showSummaries` için en yeni üstte QuickPick/webview'siz liste (FR-017, FR-019)
+- [x] T044 [US2] `package.json` + `src/extension.ts`: `tokenomist.finishSpec`, `tokenomist.showSummaries` komutları; US2 metinlerini l10n dosyalarına ekle (FR-025)
 
 **Checkpoint**: US1 + US2 birlikte uçtan uca: spec → kilit → bitiş → geri yükleme → özet
 

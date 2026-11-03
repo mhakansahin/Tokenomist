@@ -30,6 +30,16 @@
         "category": "Tokenomist"
       },
       {
+        "command": "tokenomist.finishSpec",
+        "title": "%command.finishSpec%",
+        "category": "Tokenomist"
+      },
+      {
+        "command": "tokenomist.showSummaries",
+        "title": "%command.showSummaries%",
+        "category": "Tokenomist"
+      },
+      {
         "command": "tokenomist.showStatusDetails",
         "title": "%command.showStatusDetails%",
         "category": "Tokenomist"

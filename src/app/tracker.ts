@@ -9,9 +9,11 @@ import { ClaudeSettingsStore } from "./claudeSettingsStore";
 import { HookBody, HookServer } from "./hookServer";
 import { resolveSessionModel, SessionModels, transcriptCreatedAt } from "./sessionModels";
 import { TrackingStore } from "../persistence/trackingStore";
+import { SummaryStore, summaryId } from "../persistence/summaryStore";
 import { recommend, Thresholds } from "../domain/classification";
 import {
   applyModel,
+  isEmptySettings,
   restoreModel,
   SettingsDoc,
   SettingsParseError,
@@ -25,14 +27,17 @@ import {
   GateContext,
   preModelSwitchResponse,
 } from "../domain/gateDecisions";
+import { dominantModel, estimateSavings } from "../domain/savings";
 import { analyzeText } from "../domain/scoring";
+import { isComplete } from "../domain/tasksProgress";
 import { managesModelKey, transition, TrackingEvent } from "../domain/tracking";
-import { isModel, Mode, Model, modelFamily, SpecAnalysis, SpecTracking } from "../domain/types";
+import { isModel, Mode, Model, modelFamily, SpecAnalysis, SpecSummary, SpecTracking } from "../domain/types";
 
 export interface WorkspaceView {
   readonly root: string;
   readonly activeFeature: ActiveFeature | undefined;
   readSpec(feature?: ActiveFeature): Promise<string | undefined>;
+  readTasks(feature?: ActiveFeature): Promise<string | undefined>;
   hasPlan(feature?: ActiveFeature): Promise<boolean>;
 }
 
@@ -50,6 +55,8 @@ export interface TrackerUi {
   askUnlockedPlan(recommended: Model | undefined): Promise<"approve" | "change" | "continue" | undefined>;
   askSessionMismatch(locked: Model): Promise<"newConversation" | "continue" | undefined>;
   askOverride(locked: Model, target: Model | undefined): Promise<"update" | "revert" | undefined>;
+  askFinish(specName: string): Promise<"finish" | "notYet" | undefined>;
+  showSummary(summary: SpecSummary): void;
   warn(message: string): void;
 }
 
@@ -57,6 +64,7 @@ export interface TrackerDeps {
   workspace: WorkspaceView;
   settingsStore: ClaudeSettingsStore;
   trackingStore: TrackingStore;
+  summaryStore: SummaryStore;
   sessions: SessionModels;
   settings(): TrackerSettings;
   ui: TrackerUi;
@@ -214,6 +222,98 @@ export class Tracker {
       this.deps.ui.modelLocked(model);
     }
     return true;
+  }
+
+  // ------------------------------------------------------------------ completion (US2)
+
+  /** FR-015: all tasks checked → ask; the spec only finishes on the user's confirmation. */
+  async onTasksChanged(feature: ActiveFeature): Promise<void> {
+    const tracking = this.deps.trackingStore.get(feature.featureDir);
+    if (feature.featureDir !== this.deps.workspace.activeFeature?.featureDir || tracking?.state !== "locked") {
+      return;
+    }
+    const tasks = await this.deps.workspace.readTasks(feature);
+    if (tasks === undefined || !isComplete(tasks)) {
+      return;
+    }
+    await this.saveTransition(tracking, { type: "tasksComplete" });
+    this.emit();
+    await this.askAndFinish();
+  }
+
+  /** `tokenomist.finishSpec`: confirm, then finish. */
+  async requestFinish(): Promise<void> {
+    if (!this.lockedTracking()) {
+      this.deps.ui.warn(this.deps.t("There is no locked spec to finish."));
+      return;
+    }
+    await this.askAndFinish();
+  }
+
+  /** FR-016, FR-017: restore the original model exactly, then record and show the summary. */
+  async finish(): Promise<SpecSummary | undefined> {
+    const tracking = this.lockedTracking();
+    if (!tracking?.lock) {
+      this.deps.ui.warn(this.deps.t("There is no locked spec to finish."));
+      return undefined;
+    }
+    const local = await this.readLocalOrWarn();
+    if (!local) {
+      return undefined;
+    }
+    const { settingsStore, trackingStore, summaryStore, workspace } = this.deps;
+    const original = tracking.original;
+    if (original) {
+      await this.updateLocal((doc) => restoreModel(doc, original.localModel), { modelKey: true });
+      if (original.createdLocalFile && isEmptySettings((await settingsStore.readLocal()).doc)) {
+        await settingsStore.deleteLocal();
+      }
+      if (original.userModel) {
+        await settingsStore.restoreUserModel(original.userModel);
+      }
+    }
+    const completedAt = this.nowIso();
+    const segments = tracking.lock.segments;
+    const summary: SpecSummary = {
+      id: summaryId(workspace.root, tracking.spec.featureDir, completedAt),
+      specName: tracking.spec.name,
+      workspaceName: path.basename(workspace.root),
+      level: tracking.lock.level ?? tracking.analysis?.level ?? "medium",
+      recommendedModel: tracking.lock.recommendedModel,
+      usedModel: dominantModel(segments, completedAt) ?? tracking.lock.model,
+      manualOverride: tracking.lock.manualOverride,
+      estimatedSavingsPct: estimateSavings(segments, completedAt),
+      startedAt: tracking.startedAt,
+      completedAt,
+    };
+    await summaryStore.add(summary);
+    await trackingStore.delete(tracking.spec.featureDir);
+    this.emit();
+    this.deps.ui.showSummary(summary);
+    return summary;
+  }
+
+  summaries(): SpecSummary[] {
+    return this.deps.summaryStore.list();
+  }
+
+  private async askAndFinish(): Promise<void> {
+    const tracking = this.lockedTracking();
+    if (!tracking) {
+      return;
+    }
+    const answer = await this.deps.ui.askFinish(tracking.spec.name);
+    if (answer === "finish") {
+      await this.finish();
+    } else if (answer === "notYet" && tracking.state === "completionPending") {
+      await this.saveTransition(this.lockedTracking()!, { type: "finishDeclined" });
+      this.emit();
+    }
+  }
+
+  private lockedTracking(): SpecTracking | undefined {
+    const tracking = this.activeTracking();
+    return tracking && (tracking.state === "locked" || tracking.state === "completionPending") ? tracking : undefined;
   }
 
   // ------------------------------------------------------------------ hook handlers

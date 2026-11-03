@@ -94,7 +94,7 @@ function describe(view: StatusView): { text: string; tooltip: string; command?: 
             ? `$(lock) ${name} · ${levelLabel(lock?.level)} · ${lock ? modelLabel(lock.model) : "?"}`
             : `$(check) ${name} · ${vscode.l10n.t("finish?")}`,
         tooltip: vscode.l10n.t("Locked model: {0}. It applies to new Claude Code conversations.", lock ? modelLabel(lock.model) : "?"),
-        command: "tokenomist.showRecommendation",
+        command: tracking.state === "locked" ? "tokenomist.showRecommendation" : "tokenomist.finishSpec",
       };
     case "suspended":
       return { text: "$(sparkle) Tokenomist", tooltip: "", command: "tokenomist.analyzeSpec" };

@@ -2,5 +2,7 @@
   "description": "Picks a cheaper or stronger Claude model per Spec Kit spec, based on its complexity.",
   "command.analyzeSpec": "Analyze Active Spec",
   "command.showRecommendation": "Review Model Recommendation",
-  "command.showStatusDetails": "Show Status Details"
+  "command.showStatusDetails": "Show Status Details",
+  "command.finishSpec": "Finish Spec",
+  "command.showSummaries": "Show Usage Summaries"
 }
