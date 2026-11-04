@@ -10,13 +10,13 @@
 | `tokenomist.custom.complex` | string | `""` | boş = Dengeli (Opus) |
 | `tokenomist.custom.writing` | string | `""` | boş = 001 FR-003 davranışı |
 
-Şema `pattern` alanı (Ayarlar ekranında anında uyarı için):
+Şema `pattern` alanı (Ayarlar ekranında anında **biçim** uyarısı için):
 
 ```text
-^\s*$|^\s*(?i:haiku|sonnet|opus|fable|best|opusplan|(?:sonnet|opus|fable)\[1m\]|claude-[a-z0-9.\-]+(?:\[1m\])?)\s*$
+^\s*([A-Za-z0-9.\-]+(\[1[mM]\])?)?\s*$
 ```
 
-Ayarın `patternErrorMessage` alanı `%config.custom.invalid%` olarak yerelleştirilir. Geçerli kaynak, `src/domain/modelValue.ts` içindeki çalışma zamanı doğrulamasıdır. Şemadaki desen yalnızca anında uyarı içindir; iki kaynağın uyumu bir birim testiyle denetlenir.
+Desen bilerek gevşek tutuldu: `engines.vscode ^1.94` (Chromium 124) satır içi `(?i:…)` bayrağını desteklemiyor (analyze I1). Anlam denetimi (Claude değeri mi, varyant geçerli mi) yalnızca `src/domain/modelValue.ts` içinde yapılır. Ayarın `patternErrorMessage` alanı `%config.custom.invalid%` olarak yerelleştirilir. Bir birim testi şunu denetler: `parseModelValue`'nun kabul ettiği hiçbir değeri desen reddetmez.
 
 ## Claude Code `settings.local.json`
 
