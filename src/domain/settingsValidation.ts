@@ -1,6 +1,7 @@
 // Validation of the user's mode and threshold settings (FR-020, FR-021; data-model.md ModeSettings).
 
-import { DEFAULT_THRESHOLDS, Thresholds } from "./classification";
+import { CustomTable, DEFAULT_THRESHOLDS, Thresholds } from "./classification";
+import { parseModelValue, ParseFailure } from "./modelValue";
 import { Mode, MODES } from "./types";
 
 export type ThresholdError = "mediumRange" | "complexRange" | "marginRange" | "order";
@@ -32,6 +33,30 @@ export function resolveThresholds(raw: RawThresholds, lastValid: Thresholds): { 
   return errors.length > 0
     ? { thresholds: { ...lastValid }, errors }
     : { thresholds: { medium: medium as number, complex: complex as number, margin: margin as number }, errors };
+}
+
+export type CustomCell = keyof CustomTable;
+export const CUSTOM_CELLS: readonly CustomCell[] = ["simple", "medium", "complex", "writing"];
+
+/** 002 FR-004, FR-005: valid cells are normalised, empty ones stay empty, invalid ones keep `lastValid`. */
+export function resolveCustomTable(
+  raw: Partial<Record<CustomCell, unknown>>,
+  lastValid: CustomTable,
+): { table: CustomTable; errors: Array<{ cell: CustomCell; reason: ParseFailure }> } {
+  const table: CustomTable = {};
+  const errors: Array<{ cell: CustomCell; reason: ParseFailure }> = [];
+  for (const cell of CUSTOM_CELLS) {
+    const parsed = parseModelValue(raw[cell]);
+    if (parsed.ok) {
+      table[cell] = parsed.value;
+    } else if (parsed.reason !== "empty") {
+      errors.push({ cell, reason: parsed.reason });
+      if (lastValid[cell]) {
+        table[cell] = lastValid[cell];
+      }
+    }
+  }
+  return { table, errors };
 }
 
 export function resolveMode(raw: unknown): Mode {

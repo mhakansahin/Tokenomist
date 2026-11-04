@@ -71,14 +71,16 @@
           "enum": [
             "saver",
             "balanced",
-            "quality"
+            "quality",
+            "custom"
           ],
           "default": "balanced",
           "scope": "window",
           "enumDescriptions": [
             "%config.mode.saver%",
             "%config.mode.balanced%",
-            "%config.mode.quality%"
+            "%config.mode.quality%",
+            "%config.mode.custom%"
           ],
           "markdownDescription": "%config.mode%"
         },
@@ -111,6 +113,38 @@
           "default": false,
           "scope": "window",
           "markdownDescription": "%config.writingModel.followMode%"
+        },
+        "tokenomist.custom.simple": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "pattern": "^\\s*([A-Za-z0-9.\\-]+(\\[1[mM]\\])?)?\\s*$",
+          "patternErrorMessage": "%config.custom.invalid%",
+          "markdownDescription": "%config.custom.simple%"
+        },
+        "tokenomist.custom.medium": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "pattern": "^\\s*([A-Za-z0-9.\\-]+(\\[1[mM]\\])?)?\\s*$",
+          "patternErrorMessage": "%config.custom.invalid%",
+          "markdownDescription": "%config.custom.medium%"
+        },
+        "tokenomist.custom.complex": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "pattern": "^\\s*([A-Za-z0-9.\\-]+(\\[1[mM]\\])?)?\\s*$",
+          "patternErrorMessage": "%config.custom.invalid%",
+          "markdownDescription": "%config.custom.complex%"
+        },
+        "tokenomist.custom.writing": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "pattern": "^\\s*([A-Za-z0-9.\\-]+(\\[1[mM]\\])?)?\\s*$",
+          "patternErrorMessage": "%config.custom.invalid%",
+          "markdownDescription": "%config.custom.writing%"
         }
       }
     }

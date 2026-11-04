@@ -56,6 +56,11 @@ export function resolveMapping(mode: Mode, custom: CustomTable = {}): Readonly<R
   return { simple: custom.simple ?? base.simple, medium: custom.medium ?? base.medium, complex: custom.complex ?? base.complex };
 }
 
+/** 002 FR-002: the custom spec-writing cell wins in custom mode; otherwise 001 FR-003. */
+export function writingValueFor(mode: Mode, followMode: boolean, custom: CustomTable = {}): ModelValue {
+  return mode === "custom" && custom.writing ? custom.writing : writingModelFor(mode, followMode);
+}
+
 export function recommend(
   score: number,
   mode: Mode,

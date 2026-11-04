@@ -14,5 +14,11 @@
   "config.thresholds.complex": "Score (0–100) from which a spec counts as **complex**.",
   "config.borderlineMargin": "A score this many points below a threshold is rounded up to the stronger model.",
   "config.writingModel.followMode": "Write specs (specify, clarify) with the mode's model (Saver → Haiku, Balanced → Sonnet, Quality → Opus) instead of always Sonnet.",
-  "command.cleanClaudeSettings": "Remove Tokenomist from Claude Code Settings"
+  "command.cleanClaudeSettings": "Remove Tokenomist from Claude Code Settings",
+  "config.mode.custom": "Custom: your own Claude model per level (tokenomist.custom.*); empty cells use Balanced",
+  "config.custom.simple": "Custom mode: model for **simple** specs, e.g. `haiku` or `claude-haiku-4-5`. Empty = Balanced (Haiku).",
+  "config.custom.medium": "Custom mode: model for **medium** specs, e.g. `sonnet` or `opusplan`. Empty = Balanced (Sonnet).",
+  "config.custom.complex": "Custom mode: model for **complex** specs, e.g. `opus` or `opus[1m]`. Empty = Balanced (Opus).",
+  "config.custom.writing": "Custom mode: model while the spec is written (specify, clarify). Empty = Sonnet.",
+  "config.custom.invalid": "Enter a Claude model value such as opus, opus[1m], opusplan or claude-opus-5-5, or leave it empty."
 }

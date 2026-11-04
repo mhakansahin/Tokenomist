@@ -5,14 +5,13 @@ import { ClaudeSettingsStore } from "./app/claudeSettingsStore";
 import { LEDGER_FILE, RestoreLedger } from "./app/restoreLedger";
 import { SessionModels } from "./app/sessionModels";
 import { SpecKitWatcher } from "./app/specKitWatcher";
-import { Tracker, TrackerSettings } from "./app/tracker";
-import { DEFAULT_THRESHOLDS, Thresholds, writingModelFor } from "./domain/classification";
-import { resolveMode, resolveThresholds, ThresholdError } from "./domain/settingsValidation";
+import { Tracker } from "./app/tracker";
 import { SummaryStore } from "./persistence/summaryStore";
 import { TrackingStore } from "./persistence/trackingStore";
 import { askOverride, askSessionMismatch, askUnlockedPlan, askWriting, confirmCleanup } from "./ui/gatePrompts";
 import { announceLock, announceRecommendation, pickModel } from "./ui/recommendation";
 import { passiveExplanation, PassiveCause, SHOW_STATUS_COMMAND, StatusBar } from "./ui/statusBar";
+import { readSettings } from "./ui/settings";
 import { openSetup } from "./ui/setup";
 import { askFinish, showSummaries, showSummary } from "./ui/summaries";
 
@@ -190,37 +189,6 @@ export async function detectClaudeCode(): Promise<Detection> {
     extensionEnv: vscode.workspace.getConfiguration("claudeCode").get("environmentVariables"),
     managedSettingsText: await readManagedSettings(),
   });
-}
-
-let lastValidThresholds: Thresholds = { ...DEFAULT_THRESHOLDS };
-
-/** FR-020, FR-021, FR-003: invalid thresholds are reported and the last valid ones stay in use. */
-function readSettings(options: { warn?: boolean } = {}): TrackerSettings {
-  const config = vscode.workspace.getConfiguration("tokenomist");
-  const mode = resolveMode(config.get("mode"));
-  const { thresholds, errors } = resolveThresholds(
-    { medium: config.get("thresholds.medium"), complex: config.get("thresholds.complex"), margin: config.get("borderlineMargin") },
-    lastValidThresholds,
-  );
-  if (errors.length === 0) {
-    lastValidThresholds = thresholds;
-  } else if (options.warn) {
-    void vscode.window.showErrorMessage(errors.map(thresholdErrorText).join(" "));
-  }
-  return { mode, thresholds, writingModel: writingModelFor(mode, config.get<boolean>("writingModel.followMode") === true) };
-}
-
-function thresholdErrorText(error: ThresholdError): string {
-  switch (error) {
-    case "mediumRange":
-      return vscode.l10n.t("The medium threshold must be between 1 and 98.");
-    case "complexRange":
-      return vscode.l10n.t("The complex threshold must be between 2 and 99.");
-    case "marginRange":
-      return vscode.l10n.t("The borderline margin must be between 0 and 20.");
-    case "order":
-      return vscode.l10n.t("The medium threshold must be lower than the complex threshold. The previous values stay in use.");
-  }
 }
 
 /** US4: the first time Tokenomist can work, suggest choosing a mode. */

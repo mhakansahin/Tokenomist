@@ -14,5 +14,11 @@
   "config.thresholds.complex": "Spec'in **karmaşık** sayıldığı skor (0–100).",
   "config.borderlineMargin": "Bir eşiğin bu kadar puan altındaki skor güçlü modele yuvarlanır.",
   "config.writingModel.followMode": "Spec'leri (specify, clarify) her zaman Sonnet yerine modun modeliyle yaz (Tasarruf → Haiku, Dengeli → Sonnet, Kalite → Opus).",
-  "command.cleanClaudeSettings": "Claude Code Ayarlarını Temizle"
+  "command.cleanClaudeSettings": "Claude Code Ayarlarını Temizle",
+  "config.mode.custom": "Özel: her seviye için kendi Claude modelin (tokenomist.custom.*); boş hücreler Dengeli'yi kullanır",
+  "config.custom.simple": "Özel mod: **basit** spec'lerin modeli, örn. `haiku` veya `claude-haiku-4-5`. Boş = Dengeli (Haiku).",
+  "config.custom.medium": "Özel mod: **orta** spec'lerin modeli, örn. `sonnet` veya `opusplan`. Boş = Dengeli (Sonnet).",
+  "config.custom.complex": "Özel mod: **karmaşık** spec'lerin modeli, örn. `opus` veya `opus[1m]`. Boş = Dengeli (Opus).",
+  "config.custom.writing": "Özel mod: spec yazılırken (specify, clarify) kullanılacak model. Boş = Sonnet.",
+  "config.custom.invalid": "opus, opus[1m], opusplan veya claude-opus-5-5 gibi bir Claude model değeri girin ya da boş bırakın."
 }

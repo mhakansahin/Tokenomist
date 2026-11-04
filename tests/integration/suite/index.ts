@@ -50,6 +50,21 @@ it("finishing restores the original (absent) model and records a summary", async
   assert.equal(tracker!.activeTracking(), undefined);
 });
 
+it("002: custom mode cells from VS Code settings drive the recommendation", async () => {
+  const { tracker } = await api();
+  const config = vscode.workspace.getConfiguration("tokenomist");
+  await config.update("mode", "custom", vscode.ConfigurationTarget.Global);
+  await config.update("custom.medium", " OpusPlan ", vscode.ConfigurationTarget.Global);
+  try {
+    const analysis = await tracker!.analyzeActive();
+    assert.equal(analysis?.level, "medium", "the fixture spec is medium");
+    assert.equal(analysis?.recommendedModel, "opusplan");
+  } finally {
+    await config.update("custom.medium", undefined, vscode.ConfigurationTarget.Global);
+    await config.update("mode", undefined, vscode.ConfigurationTarget.Global);
+  }
+});
+
 export async function run(): Promise<void> {
   const scenario = process.env.TOKENOMIST_SCENARIO ?? "main";
   if (scenario !== "main") {

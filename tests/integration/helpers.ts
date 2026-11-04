@@ -123,7 +123,7 @@ export async function setup(options: { localSettings?: unknown } = {}) {
   const ui = new FakeUi();
   const newConversations: number[] = [];
   const settingsStore = new ClaudeSettingsStore(root, path.join(root, "user-settings.json"));
-  const settings: TrackerSettings = { mode: "balanced", thresholds: { ...DEFAULT_THRESHOLDS }, writingModel: "sonnet" };
+  const settings: TrackerSettings = { mode: "balanced", thresholds: { ...DEFAULT_THRESHOLDS }, writingModel: "sonnet", custom: {} };
   const makeTracker = (overrides: Partial<TrackerDeps> = {}) =>
     new Tracker({
       workspace,

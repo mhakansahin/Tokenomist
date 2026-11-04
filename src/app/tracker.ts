@@ -11,7 +11,7 @@ import { HookBody, HookServer } from "./hookServer";
 import { resolveSessionModel, SessionModels, transcriptCreatedAt } from "./sessionModels";
 import { TrackingStore } from "../persistence/trackingStore";
 import { SummaryStore, summaryId } from "../persistence/summaryStore";
-import { recommend, Thresholds } from "../domain/classification";
+import { CustomTable, recommend, Thresholds } from "../domain/classification";
 import {
   applyModel,
   isEmptySettings,
@@ -47,7 +47,10 @@ export interface WorkspaceView {
 export interface TrackerSettings {
   mode: Mode;
   thresholds: Thresholds;
+  /** Already resolved for the active mode (002 FR-002). */
   writingModel: ModelValue;
+  /** Cells of the custom mode (002 FR-001); ignored by the preset modes. */
+  custom: CustomTable;
 }
 
 export interface TrackerUi {
@@ -551,8 +554,8 @@ export class Tracker {
     if (!result) {
       return undefined;
     }
-    const { mode, thresholds } = this.deps.settings();
-    const rec = recommend(result.score, mode, thresholds);
+    const { mode, thresholds, custom } = this.deps.settings();
+    const rec = recommend(result.score, mode, thresholds, custom);
     const specHash = createHash("sha256").update(text!).digest("hex");
     let tracking = this.deps.trackingStore.get(feature.featureDir) ?? (await this.newTracking(feature, text));
     const unchanged =
