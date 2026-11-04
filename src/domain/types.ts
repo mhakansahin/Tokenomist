@@ -6,8 +6,13 @@ export const MODELS: readonly Model[] = ["haiku", "sonnet", "opus"];
 export type Level = "simple" | "medium" | "complex";
 export const LEVELS: readonly Level[] = ["simple", "medium", "complex"];
 
-export type Mode = "saver" | "balanced" | "quality";
-export const MODES: readonly Mode[] = ["saver", "balanced", "quality"];
+export type Mode = "saver" | "balanced" | "quality" | "custom";
+export const MODES: readonly Mode[] = ["saver", "balanced", "quality", "custom"];
+/** The three modes with a fixed table (001 FR-020); `custom` builds on `balanced` (002 FR-001). */
+export type PresetMode = Exclude<Mode, "custom">;
+
+export type { ModelValue } from "./modelValue";
+import type { ModelValue } from "./modelValue";
 
 export function isModel(value: unknown): value is Model {
   return typeof value === "string" && (MODELS as readonly string[]).includes(value);
@@ -50,7 +55,7 @@ export interface SpecAnalysis {
   score: number;
   level: Level;
   borderlineBumped: boolean;
-  recommendedModel: Model;
+  recommendedModel: ModelValue;
   reasons: SignalName[];
   analyzedAt: string;
 }
@@ -66,14 +71,14 @@ export interface ModelSnapshot {
 }
 
 export interface LockSegment {
-  model: Model;
+  model: ModelValue;
   from: string;
   to?: string;
 }
 
 export interface ModelLock {
-  model: Model;
-  recommendedModel: Model;
+  model: ModelValue;
+  recommendedModel: ModelValue;
   /** Absent when the spec could not be analysed and the user picked the model by hand. */
   level?: Level;
   manualOverride: boolean;
@@ -89,7 +94,7 @@ export interface SpecTracking {
   /** State to return to when a suspended spec becomes active again. */
   resumeState?: Exclude<TrackingState, "suspended">;
   original?: ModelSnapshot;
-  writingModel?: Model;
+  writingModel?: ModelValue;
   analysis?: SpecAnalysis;
   lock?: ModelLock;
   startedAt: string;
@@ -97,7 +102,7 @@ export interface SpecTracking {
 
 export interface PendingWriting {
   original: ModelSnapshot;
-  writingModel: Model;
+  writingModel: ModelValue;
   createdAt: string;
 }
 
@@ -106,10 +111,12 @@ export interface SpecSummary {
   specName: string;
   workspaceName: string;
   level: Level;
-  recommendedModel: Model;
-  usedModel: Model;
+  recommendedModel: ModelValue;
+  usedModel: ModelValue;
   manualOverride: boolean;
   estimatedSavingsPct: number;
+  /** Set when a locked value has no known cost (002 FR-010); older summaries lack it. */
+  savingsUnknown?: true;
   startedAt: string;
   completedAt: string;
 }

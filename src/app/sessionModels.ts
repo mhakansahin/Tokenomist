@@ -2,21 +2,22 @@
 // the model is either observed from model-switch hooks or inferred from when the session started.
 
 import { promises as fs } from "node:fs";
-import { Model, modelFamily } from "../domain/types";
+import { familyOf } from "../domain/modelValue";
+import { ModelValue } from "../domain/types";
 
 const MAX_SESSIONS = 200;
 
 export interface SessionModelInputs {
-  observed?: Model;
+  observed?: ModelValue;
   /** Creation time of the session transcript; undefined when it does not exist yet (brand-new). */
   sessionStartedAt: number | undefined;
   /** When Tokenomist last wrote the local `model` key. */
   keyWrittenAt: number | undefined;
-  keyModel: Model | undefined;
+  keyModel: ModelValue | undefined;
 }
 
 /** Claude Code reads `model` only at session start, so a session newer than the last write runs it. */
-export function resolveSessionModel(inputs: SessionModelInputs): Model | undefined {
+export function resolveSessionModel(inputs: SessionModelInputs): ModelValue | undefined {
   if (inputs.observed) {
     return inputs.observed;
   }
@@ -38,18 +39,18 @@ export async function transcriptCreatedAt(transcriptPath: string | undefined): P
 }
 
 export class SessionModels {
-  private readonly models = new Map<string, Model>();
+  private readonly models = new Map<string, ModelValue>();
   private readonly acknowledged = new Map<string, string>();
 
   observe(sessionId: string | undefined, modelId: string | null | undefined): void {
-    const family = modelFamily(modelId);
+    const family = familyOf(modelId ?? "");
     if (!sessionId || !family) {
       return;
     }
     remember(this.models, sessionId, family);
   }
 
-  observed(sessionId: string | undefined): Model | undefined {
+  observed(sessionId: string | undefined): ModelValue | undefined {
     return sessionId ? this.models.get(sessionId) : undefined;
   }
 

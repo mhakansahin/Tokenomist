@@ -21,8 +21,13 @@ test("applyModel adds model and keeps other keys", () => {
   assert.equal(doc.model, undefined, "input is not mutated");
 });
 
-test("applyModel rejects values other than haiku|sonnet|opus", () => {
-  assert.throws(() => applyModel({}, "claude-opus-5-5" as never));
+test("applyModel writes any valid Claude value exactly and rejects others (002 FR-008, SC-005)", () => {
+  for (const value of ["opus[1m]", "opusplan", "claude-opus-5-5", "sonnet[1m]"]) {
+    assert.equal(applyModel({}, value).model, value);
+  }
+  for (const value of ["gpt-5", "default", "", "haiku[1m]"]) {
+    assert.throws(() => applyModel({}, value), value);
+  }
 });
 
 test("snapshot of absent model restores by deleting the key", () => {

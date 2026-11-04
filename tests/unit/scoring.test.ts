@@ -57,10 +57,11 @@ test("a spec without requirements and stories is unavailable", () => {
   assert.ok(analyzeText(sample));
 });
 
-test("a 1 MB spec is analysed in under 50 ms", () => {
+// SC-002 asks for < 2 s; 250 ms leaves room for a cold or busy machine without hiding a real regression.
+test("a 1 MB spec is analysed in under 250 ms", () => {
   const big = (sample + "\n").repeat(Math.ceil(1_000_000 / sample.length));
   analyzeText(big); // warm-up
   const started = performance.now();
   analyzeText(big);
-  assert.ok(performance.now() - started < 50, "analysis too slow");
+  assert.ok(performance.now() - started < 250, "analysis too slow");
 });

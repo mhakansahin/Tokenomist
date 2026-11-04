@@ -8,7 +8,6 @@ import { SpecKitWatcher } from "./app/specKitWatcher";
 import { Tracker, TrackerSettings } from "./app/tracker";
 import { DEFAULT_THRESHOLDS, Thresholds, writingModelFor } from "./domain/classification";
 import { resolveMode, resolveThresholds, ThresholdError } from "./domain/settingsValidation";
-import { isModel } from "./domain/types";
 import { SummaryStore } from "./persistence/summaryStore";
 import { TrackingStore } from "./persistence/trackingStore";
 import { askOverride, askSessionMismatch, askUnlockedPlan, askWriting, confirmCleanup } from "./ui/gatePrompts";
@@ -59,7 +58,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
       if (!tracker) {
         return explainPassive(status.current.passive);
       }
-      await tracker.review(isModel(model) ? model : undefined);
+      await tracker.review(typeof model === "string" ? model : undefined);
     }),
     vscode.commands.registerCommand("tokenomist.finishSpec", async () => {
       if (!tracker) {

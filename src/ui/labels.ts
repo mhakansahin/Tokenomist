@@ -1,10 +1,10 @@
 // Localised names shared by the UI (FR-025). Messages are English; l10n/bundle.l10n.tr.json translates.
 import * as vscode from "vscode";
-import { Level, Model, SignalName, SpecAnalysis } from "../domain/types";
-import { MODEL_LABEL } from "../app/tracker";
+import { Level, ModelValue, SignalName, SpecAnalysis } from "../domain/types";
+import { modelInfo } from "../domain/modelValue";
 
-export function modelLabel(model: Model): string {
-  return MODEL_LABEL[model];
+export function modelLabel(model: ModelValue): string {
+  return modelInfo(model).displayName;
 }
 
 export function levelLabel(level: Level | undefined): string {

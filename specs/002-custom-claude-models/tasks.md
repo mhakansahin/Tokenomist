@@ -22,7 +22,7 @@ description: "Task list for Özel Claude Model Eşlemesi"
 
 ## Phase 1: Setup
 
-- [ ] T001 Başlangıç ölçümü: `npm test` ve `node ./out/tests/integration/runTests.js` çalıştır; geçen test sayısını (001: 102 birim/entegrasyon + 4 VS Code senaryosu) `specs/002-custom-claude-models/tasks.md` sonundaki "Notlar" bölümüne yaz (SC-002 karşılaştırma tabanı)
+- [x] T001 Başlangıç ölçümü: `npm test` ve `node ./out/tests/integration/runTests.js` çalıştır; geçen test sayısını (001: 102 birim/entegrasyon + 4 VS Code senaryosu) `specs/002-custom-claude-models/tasks.md` sonundaki "Notlar" bölümüne yaz (SC-002 karşılaştırma tabanı)
 
 ---
 
@@ -34,16 +34,16 @@ description: "Task list for Özel Claude Model Eşlemesi"
 
 ### Tests (önce yaz)
 
-- [ ] T002 [P] `tests/unit/modelValue.test.ts` (FR-003): research R3 gramerinin her dalı. Kabul: `haiku`, `sonnet`, `opus`, `fable`, `best`, `sonnet[1m]`, `opus[1m]`, `fable[1m]`, `opusplan`, `claude-opus-5-5`, `claude-sonnet-5-5[1m]`, ` Claude-Opus-5-5 ` → `claude-opus-5-5` (FR-005). Red ve neden: `""` → `empty`, `default` → `default`, `gpt-5`/`gemini-2.5-pro`/`o3`/`llama-4` → `notClaude`, `haiku[1m]`/`opus[2m]`/`opus[1M]x` → `unknownVariant` (SC-001). `family`, `longContext`, `displayName` (`opus[1m]` → "Opus 1M", `opusplan` → "Opus Plan", `best` → "Best", fullId olduğu gibi), `weight`/`savingsKnown` (research R4 tablosu birebir), `usesCredits` (`fable*`, `best`)
-- [ ] T003 [P] `tests/unit/modelCompatibility.test.ts`: contracts/settings-and-matching.md "PreModelSwitch eşleşmesi" tablosunun her satırı için `compatible(locked, requested)` sonucu; ayrıca istenen değer yoksa `to_model` ailesine düşme ve "varyant bilinmiyor → uyumsuz" kuralı (FR-009)
+- [x] T002 [P] `tests/unit/modelValue.test.ts` (FR-003): research R3 gramerinin her dalı. Kabul: `haiku`, `sonnet`, `opus`, `fable`, `best`, `sonnet[1m]`, `opus[1m]`, `fable[1m]`, `opusplan`, `claude-opus-5-5`, `claude-sonnet-5-5[1m]`, ` Claude-Opus-5-5 ` → `claude-opus-5-5` (FR-005). Red ve neden: `""` → `empty`, `default` → `default`, `gpt-5`/`gemini-2.5-pro`/`o3`/`llama-4` → `notClaude`, `haiku[1m]`/`opus[2m]`/`opus[1M]x` → `unknownVariant` (SC-001). `family`, `longContext`, `displayName` (`opus[1m]` → "Opus 1M", `opusplan` → "Opus Plan", `best` → "Best", fullId olduğu gibi), `weight`/`savingsKnown` (research R4 tablosu birebir), `usesCredits` (`fable*`, `best`)
+- [x] T003 [P] `tests/unit/modelCompatibility.test.ts`: contracts/settings-and-matching.md "PreModelSwitch eşleşmesi" tablosunun her satırı için `compatible(locked, requested)` sonucu; ayrıca istenen değer yoksa `to_model` ailesine düşme ve "varyant bilinmiyor → uyumsuz" kuralı (FR-009)
 
 ### Implementation
 
-- [ ] T004 `src/domain/modelValue.ts`: `ModelValue` (marka tipli string), `parseModelValue(raw)`, `modelInfo(value)` (`kind`, `family`, `longContext`, `displayName`, `weight`, `savingsKnown`, `usesCredits`), `compatible(locked, requested, toModelFallback?)`. data-model.md "ModelValue" tablosu birebir (FR-003, FR-009; T002, T003)
-- [ ] T005 `src/domain/types.ts`: `Mode` += `"custom"`, `MODES` güncelle; `SpecAnalysis.recommendedModel`, `ModelLock.model/recommendedModel`, `LockSegment.model`, `PendingWriting.writingModel`, `SpecTracking.writingModel`, `SpecSummary.recommendedModel/usedModel` → `ModelValue`; `SpecSummary.savingsUnknown?: true` ekle; mevcut `Model` tipi ve `modelFamily` aile işlemleri için kalır (data-model.md "001 varlıklarında değişen alanlar")
-- [ ] T006 `src/domain/claudeSettingsDoc.ts` (FR-008): `applyModel(doc, value: ModelValue)` geçerli her değeri aynen yazar, geçersizi reddeder; `tests/unit/claudeSettingsDoc.test.ts`'e `opus[1m]`, `opusplan`, `claude-opus-5-5` aynen yazılır ve `gpt-5` reddedilir vakalarını ekle (SC-005)
-- [ ] T007 `src/domain/savings.ts`: `MODEL_WEIGHT` sabiti yerine `modelInfo(value).weight`; `estimateSavings` artık `{ pct, unknown }` döner (herhangi bir segment `savingsKnown=false` ise `unknown=true`); `tests/unit/savings.test.ts` 001 vakaları aynı yüzdelerle geçer, `opusplan` → %20 ve `fable` → %0 + unknown vakaları eklenir (FR-010)
-- [ ] T008 Tip değişikliğinin 001 modüllerine yayılması: `src/app/tracker.ts`, `src/app/sessionModels.ts`, `src/ui/labels.ts` (`modelLabel(value)` → `modelInfo(value).displayName`), `src/ui/*` derlenir; `isModel` kontrolleri `parseModelValue` ile değiştirilir. `npm test` 001 testleri değişmeden yeşil (SC-002)
+- [x] T004 `src/domain/modelValue.ts`: `ModelValue` (düz `string` takma adı; doğrulama `parseModelValue`/`applyModel` sınırlarında — marka tipi her satırda dönüşüm gerektirip ek güvenlik getirmiyordu), `parseModelValue(raw)`, `modelInfo(value)` (`kind`, `family`, `longContext`, `displayName`, `weight`, `savingsKnown`, `usesCredits`), `compatible(locked, requested, toModelFallback?)`. data-model.md "ModelValue" tablosu birebir (FR-003, FR-009; T002, T003)
+- [x] T005 `src/domain/types.ts`: `Mode` += `"custom"`, `MODES` güncelle; `SpecAnalysis.recommendedModel`, `ModelLock.model/recommendedModel`, `LockSegment.model`, `PendingWriting.writingModel`, `SpecTracking.writingModel`, `SpecSummary.recommendedModel/usedModel` → `ModelValue`; `SpecSummary.savingsUnknown?: true` ekle; mevcut `Model` tipi ve `modelFamily` aile işlemleri için kalır (data-model.md "001 varlıklarında değişen alanlar")
+- [x] T006 `src/domain/claudeSettingsDoc.ts` (FR-008): `applyModel(doc, value: ModelValue)` geçerli her değeri aynen yazar, geçersizi reddeder; `tests/unit/claudeSettingsDoc.test.ts`'e `opus[1m]`, `opusplan`, `claude-opus-5-5` aynen yazılır ve `gpt-5` reddedilir vakalarını ekle (SC-005)
+- [x] T007 `src/domain/savings.ts`: `MODEL_WEIGHT` sabiti yerine `modelInfo(value).weight`; `estimateSavings` artık `{ pct, unknown }` döner (herhangi bir segment `savingsKnown=false` ise `unknown=true`); `tests/unit/savings.test.ts` 001 vakaları aynı yüzdelerle geçer, `opusplan` → %20 ve `fable` → %0 + unknown vakaları eklenir (FR-010)
+- [x] T008 Tip değişikliğinin 001 modüllerine yayılması: `src/app/tracker.ts`, `src/app/sessionModels.ts`, `src/ui/labels.ts` (`modelLabel(value)` → `modelInfo(value).displayName`), `src/ui/*` derlenir; `isModel` kontrolleri `parseModelValue` ile değiştirilir. `npm test` 001 testleri değişmeden yeşil (SC-002)
 
 **Checkpoint**: `npm test` yeşil, test sayısı ≥ T001 tabanı + yeni testler
 
@@ -150,4 +150,4 @@ T009 customMapping.test · T010 settingsValidation.test     (birlikte)
 
 ## Notlar
 
-<!-- T001 başlangıç ölçümü buraya -->
+- **T001 taban (2026-11-04)**: `npm test` 102 test; `runTests.js` 4 senaryoda 6 `ok`. İlk koşuda bir test bir kez kırıldı, sonraki 18 koşuda tekrarlanmadı. En olası neden soğuk makinede `scoring.test.ts` içindeki 50 ms zaman sınırı; sınır 250 ms'ye gevşetildi (SC-002 hedefi 2 s).

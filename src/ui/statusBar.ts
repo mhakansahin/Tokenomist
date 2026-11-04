@@ -1,6 +1,6 @@
 // Status bar item (FR-013; contracts/vscode-contributions.md "Status bar").
 import * as vscode from "vscode";
-import { Model, SpecTracking } from "../domain/types";
+import { ModelValue, SpecTracking } from "../domain/types";
 import { levelLabel, modelLabel, shorten } from "./labels";
 
 export type PassiveCause = "claudeMissing" | "noSpecKit" | "modelOverridden" | "settingsUnreadable";
@@ -10,7 +10,7 @@ export interface StatusView {
   gateOffline?: boolean;
   tracking?: SpecTracking;
   /** Set between /speckit-specify and the new feature directory appearing. */
-  pendingWritingModel?: Model;
+  pendingWritingModel?: ModelValue;
 }
 
 export const SHOW_STATUS_COMMAND = "tokenomist.showStatusDetails";

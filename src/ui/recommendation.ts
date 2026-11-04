@@ -1,6 +1,6 @@
 // Recommendation notification, model picker and lock announcement (FR-009, FR-010, FR-011, FR-024).
 import * as vscode from "vscode";
-import { Model, MODELS, SpecAnalysis } from "../domain/types";
+import { MODELS, ModelValue, SpecAnalysis } from "../domain/types";
 import { levelLabel, modelLabel, reasonsText } from "./labels";
 
 export function announceRecommendation(analysis: SpecAnalysis): void {
@@ -23,12 +23,12 @@ export function announceRecommendation(analysis: SpecAnalysis): void {
 }
 
 interface ModelItem extends vscode.QuickPickItem {
-  model: Model;
+  model: ModelValue;
 }
 
 export async function pickModel(
   analysis: SpecAnalysis | undefined,
-): Promise<{ model: Model; manualOverride: boolean } | undefined> {
+): Promise<{ model: ModelValue; manualOverride: boolean } | undefined> {
   const recommended = analysis?.recommendedModel;
   const ordered = recommended ? [recommended, ...MODELS.filter((m) => m !== recommended)] : [...MODELS];
   const items: ModelItem[] = ordered.map((model) => ({
@@ -46,7 +46,7 @@ export async function pickModel(
   return picked && { model: picked.model, manualOverride: picked.model !== recommended };
 }
 
-export function announceLock(model: Model, startNewConversation: () => Promise<void>): void {
+export function announceLock(model: ModelValue, startNewConversation: () => Promise<void>): void {
   const start = vscode.l10n.t("Start new conversation");
   void vscode.window
     .showInformationMessage(

@@ -2,7 +2,8 @@
 // Pure: the caller supplies the tracking context and turns "ask*" decisions into dialogs.
 
 import * as path from "node:path";
-import { Model, modelFamily, TrackingState } from "./types";
+import { familyOf } from "./modelValue";
+import { ModelValue, TrackingState } from "./types";
 
 export interface ExpansionInput {
   command_name?: string;
@@ -20,23 +21,23 @@ export interface ModelSwitchInput {
 export interface GateContext {
   workspaceRoot: string;
   /** Spec-writing model from settings (FR-003). */
-  writingModel: Model;
+  writingModel: ModelValue;
   /** Last known model of the hook's session, if any (research.md R4). */
-  sessionModel?: Model;
+  sessionModel?: ModelValue;
   /** Tracking record of the active feature, if any. */
-  tracking?: { state: TrackingState; lockedModel?: Model; recommendedModel?: Model };
+  tracking?: { state: TrackingState; lockedModel?: ModelValue; recommendedModel?: ModelValue };
 }
 
 export type ExpansionDecision =
   | { kind: "allow" }
-  | { kind: "startWriting"; model: Model }
-  | { kind: "askWriting"; model: Model }
-  | { kind: "askUnlockedPlan"; recommendedModel: Model | undefined }
-  | { kind: "askSessionMismatch"; lockedModel: Model };
+  | { kind: "startWriting"; model: ModelValue }
+  | { kind: "askWriting"; model: ModelValue }
+  | { kind: "askUnlockedPlan"; recommendedModel: ModelValue | undefined }
+  | { kind: "askSessionMismatch"; lockedModel: ModelValue };
 
 export type ModelSwitchDecision =
   | { kind: "allow" }
-  | { kind: "askOverride"; lockedModel: Model; targetModel: Model | undefined; persistsToUserSettings: boolean };
+  | { kind: "askOverride"; lockedModel: ModelValue; targetModel: ModelValue | undefined; persistsToUserSettings: boolean };
 
 export type ExpansionAnswer = { kind: "allow" } | { kind: "block"; reason: string };
 export type ModelSwitchAnswer = { kind: "allow" } | { kind: "deny"; message: string };
@@ -82,7 +83,7 @@ export function decidePreModelSwitch(input: ModelSwitchInput, ctx: GateContext):
   if (!tracking || !LOCKED_STATES.has(tracking.state) || !tracking.lockedModel) {
     return { kind: "allow" };
   }
-  const target = modelFamily(input.to_model);
+  const target = familyOf(input.to_model ?? "");
   if (target === tracking.lockedModel) {
     return { kind: "allow" };
   }

@@ -33,7 +33,8 @@ import { dominantModel, estimateSavings } from "../domain/savings";
 import { analyzeText } from "../domain/scoring";
 import { isComplete } from "../domain/tasksProgress";
 import { managesModelKey, transition, TrackingEvent } from "../domain/tracking";
-import { isModel, KeySnapshot, Mode, Model, modelFamily, PendingWriting, SpecAnalysis, SpecSummary, SpecTracking } from "../domain/types";
+import { modelInfo, parseModelValue } from "../domain/modelValue";
+import { KeySnapshot, Mode, ModelValue, PendingWriting, SpecAnalysis, SpecSummary, SpecTracking } from "../domain/types";
 
 export interface WorkspaceView {
   readonly root: string;
@@ -46,18 +47,18 @@ export interface WorkspaceView {
 export interface TrackerSettings {
   mode: Mode;
   thresholds: Thresholds;
-  writingModel: Model;
+  writingModel: ModelValue;
 }
 
 export interface TrackerUi {
   recommendationReady(analysis: SpecAnalysis): void;
-  pickModel(analysis: SpecAnalysis | undefined): Promise<{ model: Model; manualOverride: boolean } | undefined>;
+  pickModel(analysis: SpecAnalysis | undefined): Promise<{ model: ModelValue; manualOverride: boolean } | undefined>;
   /** Tells the user the lock applies to new conversations and offers to start one. */
-  modelLocked(model: Model): void;
-  askUnlockedPlan(recommended: Model | undefined): Promise<"approve" | "change" | "continue" | undefined>;
-  askSessionMismatch(locked: Model): Promise<"newConversation" | "continue" | undefined>;
-  askOverride(locked: Model, target: Model | undefined): Promise<"update" | "revert" | undefined>;
-  askWriting(model: Model): Promise<"newConversation" | "continue" | undefined>;
+  modelLocked(model: ModelValue): void;
+  askUnlockedPlan(recommended: ModelValue | undefined): Promise<"approve" | "change" | "continue" | undefined>;
+  askSessionMismatch(locked: ModelValue): Promise<"newConversation" | "continue" | undefined>;
+  askOverride(locked: ModelValue, target: ModelValue | undefined): Promise<"update" | "revert" | undefined>;
+  askWriting(model: ModelValue): Promise<"newConversation" | "continue" | undefined>;
   askFinish(specName: string): Promise<"finish" | "notYet" | undefined>;
   confirmCleanup(): Promise<boolean>;
   info(message: string): void;
@@ -86,7 +87,10 @@ export type PassiveReason = "settingsUnreadable";
 /** An unbound spec-writing intervention is undone after this long (data-model.md PendingWriting). */
 const PENDING_WRITING_TTL_MS = 24 * 3600_000;
 
-export const MODEL_LABEL: Readonly<Record<Model, string>> = { haiku: "Haiku", sonnet: "Sonnet", opus: "Opus" };
+/** Human name of a model value, e.g. "Opus 1M" (002 FR-007). */
+export function modelLabelOf(value: ModelValue): string {
+  return modelInfo(value).displayName;
+}
 
 export class Tracker {
   private readonly listeners = new Set<() => void>();
@@ -210,24 +214,24 @@ export class Tracker {
   }
 
   /** `tokenomist.showRecommendation`: a model argument locks without asking (FR-010). */
-  async review(model?: Model): Promise<void> {
+  async review(model?: string): Promise<void> {
     const tracking = this.activeTracking();
     if (tracking?.lock && (tracking.state === "locked" || tracking.state === "completionPending")) {
-      this.deps.ui.warn(this.deps.t("The model is locked to {0} for this spec.", MODEL_LABEL[tracking.lock.model]));
+      this.deps.ui.warn(this.deps.t("The model is locked to {0} for this spec.", modelLabelOf(tracking.lock.model)));
       return;
     }
     const analysis = tracking?.analysis ?? (await this.analyzeActive());
     const recommended = analysis?.recommendedModel;
-    const choice =
-      model && isModel(model)
-        ? { model, manualOverride: model !== recommended }
-        : await this.deps.ui.pickModel(analysis);
+    const parsed = model === undefined ? undefined : parseModelValue(model);
+    const choice = parsed?.ok
+      ? { model: parsed.value, manualOverride: parsed.value !== recommended }
+      : await this.deps.ui.pickModel(analysis);
     if (choice) {
       await this.lock(choice.model, choice.manualOverride);
     }
   }
 
-  async lock(model: Model, manualOverride: boolean, options: { announce?: boolean } = {}): Promise<boolean> {
+  async lock(model: ModelValue, manualOverride: boolean, options: { announce?: boolean } = {}): Promise<boolean> {
     const feature = this.deps.workspace.activeFeature;
     if (!feature) {
       return false;
@@ -317,6 +321,7 @@ export class Tracker {
     }
     const completedAt = this.nowIso();
     const segments = tracking.lock.segments;
+    const savings = estimateSavings(segments, completedAt);
     const summary: SpecSummary = {
       id: summaryId(workspace.root, tracking.spec.featureDir, completedAt),
       specName: tracking.spec.name,
@@ -325,7 +330,8 @@ export class Tracker {
       recommendedModel: tracking.lock.recommendedModel,
       usedModel: dominantModel(segments, completedAt) ?? tracking.lock.model,
       manualOverride: tracking.lock.manualOverride,
-      estimatedSavingsPct: estimateSavings(segments, completedAt),
+      estimatedSavingsPct: savings.pct,
+      ...(savings.unknown ? { savingsUnknown: true as const } : {}),
       startedAt: tracking.startedAt,
       completedAt,
     };
@@ -421,7 +427,7 @@ export class Tracker {
         }
         return this.blockForNewConversation(
           signal,
-          t("Tokenomist set the spec-writing model to {0}. Run /{1} again in the new conversation.", MODEL_LABEL[decision.model], command),
+          t("Tokenomist set the spec-writing model to {0}. Run /{1} again in the new conversation.", modelLabelOf(decision.model), command),
         );
       }
       case "askUnlockedPlan": {
@@ -431,7 +437,7 @@ export class Tracker {
         }
         const recommended = decision.recommendedModel;
         const answer = await ui.askUnlockedPlan(recommended);
-        let choice: { model: Model; manualOverride: boolean } | undefined;
+        let choice: { model: ModelValue; manualOverride: boolean } | undefined;
         if (answer === "approve" && recommended) {
           choice = { model: recommended, manualOverride: false };
         } else if (answer === "approve" || answer === "change") {
@@ -446,7 +452,7 @@ export class Tracker {
         }
         return this.blockForNewConversation(
           signal,
-          t("Tokenomist locked the model to {0}. Run /{1} again in the new conversation.", MODEL_LABEL[choice.model], command),
+          t("Tokenomist locked the model to {0}. Run /{1} again in the new conversation.", modelLabelOf(choice.model), command),
         );
       }
       case "askSessionMismatch": {
@@ -463,7 +469,7 @@ export class Tracker {
           signal,
           t(
             "This conversation may not use the locked model {0}. Run /{1} again in the new conversation.",
-            MODEL_LABEL[decision.lockedModel],
+            modelLabelOf(decision.lockedModel),
             command,
           ),
         );
@@ -481,7 +487,7 @@ export class Tracker {
     }
     const keep = preModelSwitchResponse({
       kind: "deny",
-      message: t("Tokenomist kept the locked model {0}.", MODEL_LABEL[decision.lockedModel]),
+      message: t("Tokenomist kept the locked model {0}.", modelLabelOf(decision.lockedModel)),
     });
     const answer = await ui.askOverride(decision.lockedModel, decision.targetModel);
     if (signal.aborted || answer !== "update" || !decision.targetModel || !tracking?.lock) {
@@ -514,12 +520,12 @@ export class Tracker {
 
   private async gateContext(body: HookBody, tracking: SpecTracking | undefined): Promise<GateContext> {
     const local = await this.deps.settingsStore.readLocal().catch(() => undefined);
-    const keyModel = modelFamily(typeof local?.doc.model === "string" ? local.doc.model : undefined);
+    const key = parseModelValue(local?.doc.model);
     const sessionModel = resolveSessionModel({
       observed: this.deps.sessions.observed(body.session_id),
       sessionStartedAt: await transcriptCreatedAt(body.transcript_path),
       keyWrittenAt: this.deps.trackingStore.getKeyWrittenAt(),
-      keyModel: isModel(local?.doc.model) ? keyModel : undefined,
+      keyModel: key.ok ? key.value : undefined,
     });
     return {
       workspaceRoot: this.deps.workspace.root,

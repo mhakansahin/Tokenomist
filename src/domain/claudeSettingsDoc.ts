@@ -2,7 +2,8 @@
 // (contracts/claude-settings-and-hooks.md §1). Tokenomist owns only the `model` key while a spec
 // is tracked and the http hook entries whose url contains HOOK_PATH_MARKER.
 
-import { isModel, KeySnapshot, Model } from "./types";
+import { parseModelValue } from "./modelValue";
+import { KeySnapshot, ModelValue } from "./types";
 
 export type SettingsDoc = Record<string, unknown>;
 
@@ -61,11 +62,13 @@ export function takeKeySnapshot(doc: SettingsDoc): KeySnapshot {
   return typeof doc.model === "string" ? { present: true, value: doc.model } : { present: false };
 }
 
-export function applyModel(doc: SettingsDoc, model: Model): SettingsDoc {
-  if (!isModel(model)) {
-    throw new Error(`Tokenomist only writes model aliases, got: ${String(model)}`);
+/** Writes a validated Claude model value exactly as given (002 FR-008, SC-005). */
+export function applyModel(doc: SettingsDoc, model: ModelValue): SettingsDoc {
+  const parsed = parseModelValue(model);
+  if (!parsed.ok) {
+    throw new Error(`Tokenomist only writes Claude model values, got: ${String(model)}`);
   }
-  return { ...structuredClone(doc), model };
+  return { ...structuredClone(doc), model: parsed.value };
 }
 
 export function restoreModel(doc: SettingsDoc, snapshot: KeySnapshot): SettingsDoc {

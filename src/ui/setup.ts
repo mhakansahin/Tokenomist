@@ -1,6 +1,6 @@
 // First-run setup: pick a mode and see which model each level gets (FR-020; quickstart S2).
 import * as vscode from "vscode";
-import { MODE_MAPPING } from "../domain/classification";
+import { resolveMapping } from "../domain/classification";
 import { Mode, MODES } from "../domain/types";
 import { levelLabel, modelLabel } from "./labels";
 
@@ -12,11 +12,13 @@ export function modeLabel(mode: Mode): string {
       return vscode.l10n.t("Balanced");
     case "quality":
       return vscode.l10n.t("Quality");
+    case "custom":
+      return vscode.l10n.t("Custom");
   }
 }
 
 export function mappingText(mode: Mode): string {
-  const m = MODE_MAPPING[mode];
+  const m = resolveMapping(mode);
   return (["simple", "medium", "complex"] as const).map((level) => `${levelLabel(level)} → ${modelLabel(m[level])}`).join(" · ");
 }
 
