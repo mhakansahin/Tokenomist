@@ -2,7 +2,7 @@
 // Pure: the caller supplies the tracking context and turns "ask*" decisions into dialogs.
 
 import * as path from "node:path";
-import { familyOf } from "./modelValue";
+import { compatible, familyOf, parseModelValue } from "./modelValue";
 import { ModelValue, TrackingState } from "./types";
 
 export interface ExpansionInput {
@@ -14,6 +14,8 @@ export interface ExpansionInput {
 export interface ModelSwitchInput {
   from_model?: string | null;
   to_model?: string | null;
+  /** What the user asked for, with its `[1m]` variant; null for `/model default` (002 research.md R1). */
+  requested_model?: string | null;
   source?: string;
   session_id?: string;
 }
@@ -73,7 +75,7 @@ export function decideExpansion(input: ExpansionInput, ctx: GateContext): Expans
       ? { kind: "askUnlockedPlan", recommendedModel: tracking?.recommendedModel }
       : { kind: "allow" };
   }
-  return ctx.sessionModel === tracking.lockedModel
+  return ctx.sessionModel !== undefined && compatible(tracking.lockedModel!, ctx.sessionModel)
     ? { kind: "allow" }
     : { kind: "askSessionMismatch", lockedModel: tracking.lockedModel! };
 }
@@ -83,16 +85,25 @@ export function decidePreModelSwitch(input: ModelSwitchInput, ctx: GateContext):
   if (!tracking || !LOCKED_STATES.has(tracking.state) || !tracking.lockedModel) {
     return { kind: "allow" };
   }
-  const target = familyOf(input.to_model ?? "");
-  if (target === tracking.lockedModel) {
+  if (compatible(tracking.lockedModel, input.requested_model, input.to_model)) {
     return { kind: "allow" };
   }
+  const target = requestedTarget(input);
   return {
     kind: "askOverride",
     lockedModel: tracking.lockedModel,
     targetModel: target,
     persistsToUserSettings: PERSISTING_SOURCES.has(input.source ?? ""),
   };
+}
+
+/** The value "update the lock" would use; none for `/model default` (requested_model: null). */
+function requestedTarget(input: ModelSwitchInput): ModelValue | undefined {
+  if ("requested_model" in input) {
+    const parsed = parseModelValue(input.requested_model);
+    return parsed.ok ? parsed.value : undefined;
+  }
+  return familyOf(input.to_model ?? "");
 }
 
 export function expansionResponse(answer: ExpansionAnswer): Record<string, unknown> {

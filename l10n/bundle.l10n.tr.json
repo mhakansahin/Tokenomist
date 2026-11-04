@@ -91,10 +91,13 @@
   "{0} external integrations": "{0} harici entegrasyon",
   "{0} finished. Your previous model is restored. {1}": "{0} bitti. Önceki modeliniz geri yüklendi. {1}",
   "{0} functional requirements": "{0} fonksiyonel gereksinim",
+  "{0} is billed from usage credits outside your subscription limit, and Claude Code asks for a one-time consent in an interactive /model session.": "{0}, abonelik limitinin dışında kullanım kredisiyle ücretlendirilir; Claude Code etkileşimli bir /model oturumunda tek seferlik onay ister.",
+  "{0} is not a Claude model value Tokenomist can lock.": "{0}, Tokenomist'in kilitleyebileceği bir Claude model değeri değil.",
   "{0} key entities": "{0} temel varlık",
   "{0} open questions": "{0} açık soru",
   "{0} user stories": "{0} kullanıcı hikâyesi",
   "{0} · {1} (score {2})": "{0} · {1} (skor {2})",
+  "{0} · {1} · {2} · no savings estimate": "{0} · {1} · {2} · tasarruf tahmini yok",
   "{0} · {1} · {2} · ~{3}% estimated savings": "{0} · {1} · {2} · ~%{3} tahmini tasarruf",
   "{0}: {1} spec → {2} recommended.": "{0}: {1} spec → {2} öneriliyor."
 }

@@ -73,6 +73,16 @@ export async function inputModelValue(title: string, value?: string): Promise<Mo
   return parsed.ok ? parsed.value : undefined;
 }
 
+/** 002 FR-015, research.md R2. */
+export function warnAboutCredits(value: ModelValue): void {
+  void vscode.window.showWarningMessage(
+    vscode.l10n.t(
+      "{0} is billed from usage credits outside your subscription limit, and Claude Code asks for a one-time consent in an interactive /model session.",
+      modelLabel(value),
+    ),
+  );
+}
+
 export function announceLock(model: ModelValue, startNewConversation: () => Promise<void>): void {
   const start = vscode.l10n.t("Start new conversation");
   void vscode.window

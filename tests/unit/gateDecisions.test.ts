@@ -102,3 +102,34 @@ test("model switch responses and timeout default (deny)", () => {
   });
   assert.equal(TIMEOUT_ANSWER.preModelSwitch.kind, "deny");
 });
+
+// 002 FR-009, contracts/settings-and-matching.md: requested_model carries the [1m] variant.
+test("002: the requested value decides compatibility with the lock", () => {
+  const lockOn = (lockedModel: string) => ctx({ tracking: { state: "locked", lockedModel } });
+  const ask = (lockedModel: string, targetModel: string | undefined) => ({
+    kind: "askOverride",
+    lockedModel,
+    targetModel,
+    persistsToUserSettings: true,
+  });
+  const sw = (requested_model: string | null, to_model: string) => ({ requested_model, to_model, source: "command" });
+
+  assert.deepEqual(decidePreModelSwitch(sw("opus[1m]", "claude-opus-5-5"), lockOn("opus[1m]")), { kind: "allow" });
+  assert.deepEqual(decidePreModelSwitch(sw("claude-opus-5-5", "claude-opus-5-5"), lockOn("opus")), { kind: "allow" });
+  assert.deepEqual(decidePreModelSwitch(sw("opus", "claude-opus-5-5"), lockOn("opus[1m]")), ask("opus[1m]", "opus"));
+  assert.deepEqual(decidePreModelSwitch(sw("opusplan", "claude-sonnet-5-5"), lockOn("opusplan")), { kind: "allow" });
+  assert.deepEqual(decidePreModelSwitch(sw("sonnet", "claude-sonnet-5-5"), lockOn("opusplan")), ask("opusplan", "sonnet"));
+  // `/model default` sends requested_model: null — there is no value to lock to.
+  assert.deepEqual(decidePreModelSwitch(sw(null, "claude-opus-5-5"), lockOn("haiku")), ask("haiku", undefined));
+});
+
+test("002: the gate compares the session model with the lock by compatibility", () => {
+  const locked = ctx({ tracking: { state: "locked", lockedModel: "opus[1m]" } });
+  assert.deepEqual(decideExpansion(expansion("speckit-tasks"), { ...locked, sessionModel: "opus" }), {
+    kind: "askSessionMismatch",
+    lockedModel: "opus[1m]",
+  });
+  assert.deepEqual(decideExpansion(expansion("speckit-tasks"), { ...locked, sessionModel: "opus[1m]" }), { kind: "allow" });
+  const byId = ctx({ tracking: { state: "locked", lockedModel: "opus" } });
+  assert.deepEqual(decideExpansion(expansion("speckit-plan"), { ...byId, sessionModel: "claude-opus-5-5" }), { kind: "allow" });
+});

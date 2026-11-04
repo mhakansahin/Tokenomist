@@ -95,6 +95,9 @@ export class FakeUi implements TrackerUi {
   showSummary(summary: SpecSummary): void {
     this.calls.push(`showSummary:${summary.usedModel}`);
   }
+  creditsWarning(value: string): void {
+    this.calls.push(`creditsWarning:${value}`);
+  }
   async confirmCleanup() {
     this.calls.push("confirmCleanup");
     return this.confirmCleanupAnswer;

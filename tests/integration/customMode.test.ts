@@ -65,3 +65,26 @@ test("the custom spec-writing value is applied during /speckit-specify (FR-002)"
   await post(env.server.port, "/tokenomist/expansion", { command_name: "speckit-specify", cwd: env.root, session_id: "s" }, env.server.token);
   assert.equal((await readLocal(env.root))!.model, "opusplan");
 });
+
+// 002 US2: FR-004, FR-015.
+test("an invalid free-text value is refused with a warning and nothing is locked", async (t) => {
+  const env = await customEnv(t);
+  await env.tracker.onSpecSaved(env.workspace.activeFeature!);
+  await env.tracker.review("gpt-5");
+  assert.equal(env.tracker.activeTracking()!.lock, undefined);
+  assert.ok(env.ui.calls.some((c) => c.startsWith("warn:")));
+  assert.ok(!env.ui.calls.includes("pickModel"), "an explicit bad value is not silently replaced by the picker");
+});
+
+test("Fable in a cell or as the lock warns once about usage credits, and is still accepted", async (t) => {
+  const env = await customEnv(t);
+  env.settings.custom = { complex: "fable" };
+  await env.tracker.onSettingsChanged();
+  await env.tracker.onSpecSaved(env.workspace.activeFeature!);
+  assert.equal(env.tracker.activeTracking()!.analysis!.recommendedModel, "fable");
+  await env.tracker.review("fable");
+  assert.equal(env.tracker.activeTracking()!.lock!.model, "fable");
+  assert.deepEqual(env.ui.calls.filter((c) => c.startsWith("creditsWarning")), ["creditsWarning:fable"]);
+  await env.tracker.onSettingsChanged();
+  assert.equal(env.ui.calls.filter((c) => c.startsWith("creditsWarning")).length, 1, "only once per value");
+});

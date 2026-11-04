@@ -63,6 +63,8 @@ export interface TrackerUi {
   askOverride(locked: ModelValue, target: ModelValue | undefined): Promise<"update" | "revert" | undefined>;
   askWriting(model: ModelValue): Promise<"newConversation" | "continue" | undefined>;
   askFinish(specName: string): Promise<"finish" | "notYet" | undefined>;
+  /** 002 FR-015: the value is billed from usage credits outside the subscription limit. */
+  creditsWarning(value: ModelValue): void;
   confirmCleanup(): Promise<boolean>;
   info(message: string): void;
   showSummary(summary: SpecSummary): void;
@@ -99,6 +101,7 @@ export class Tracker {
   private readonly listeners = new Set<() => void>();
   private server: HookServer | undefined;
   private lastFeatureDir: string | undefined;
+  private readonly creditsWarned = new Set<ModelValue>();
   passiveReason: PassiveReason | undefined;
 
   constructor(private readonly deps: TrackerDeps) {}
@@ -125,7 +128,7 @@ export class Tracker {
       token,
       expansion: (body, signal) => this.handleExpansion(body, signal),
       preModelSwitch: (body, signal) => this.handlePreModelSwitch(body, signal),
-      postModelSwitch: (body) => this.deps.sessions.observe(body.session_id, body.to_model),
+      postModelSwitch: (body) => this.deps.sessions.observe(body.session_id, body.to_model, body.requested_model),
       timeoutResponse: {
         expansion: {},
         preModelSwitch: preModelSwitchResponse({ kind: "deny", message: t("Tokenomist kept the locked model.") }),
@@ -204,6 +207,10 @@ export class Tracker {
 
   /** A changed mode or threshold re-computes a recommendation that is still awaiting approval. */
   async onSettingsChanged(): Promise<void> {
+    const { custom } = this.deps.settings();
+    for (const value of [custom.simple, custom.medium, custom.complex, custom.writing]) {
+      this.warnAboutCredits(value);
+    }
     const feature = this.deps.workspace.activeFeature;
     if (feature && this.activeTracking()?.state === "awaitingApproval") {
       await this.analyze(feature, { notify: true });
@@ -226,6 +233,11 @@ export class Tracker {
     const analysis = tracking?.analysis ?? (await this.analyzeActive());
     const recommended = analysis?.recommendedModel;
     const parsed = model === undefined ? undefined : parseModelValue(model);
+    if (parsed && !parsed.ok) {
+      // An explicit value that is not a Claude model is refused, never swapped for something else (002 FR-004).
+      this.deps.ui.warn(this.deps.t("{0} is not a Claude model value Tokenomist can lock.", String(model)));
+      return;
+    }
     const choice = parsed?.ok
       ? { model: parsed.value, manualOverride: parsed.value !== recommended }
       : await this.deps.ui.pickModel(analysis);
@@ -268,6 +280,7 @@ export class Tracker {
     await this.deps.trackingStore.save(tracking);
     await this.syncModelKey();
     this.emit();
+    this.warnAboutCredits(model);
     if (options.announce !== false) {
       this.deps.ui.modelLocked(model);
     }
@@ -508,8 +521,9 @@ export class Tracker {
           : original,
       lock: { ...tracking.lock, model: target, manualOverride: true, segments: [...segments, { model: target, from: now }] },
     });
-    sessions.observe(body.session_id, body.to_model);
+    sessions.observe(body.session_id, body.to_model, body.requested_model);
     await this.syncModelKey();
+    this.warnAboutCredits(target);
     this.emit();
     return preModelSwitchResponse({ kind: "allow" });
   }
@@ -727,6 +741,14 @@ export class Tracker {
         this.emit();
       }
       return undefined;
+    }
+  }
+
+  /** Once per value while VS Code runs (002 FR-015). */
+  private warnAboutCredits(value: ModelValue | undefined): void {
+    if (value && modelInfo(value).usesCredits && !this.creditsWarned.has(value)) {
+      this.creditsWarned.add(value);
+      this.deps.ui.creditsWarning(value);
     }
   }
 

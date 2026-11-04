@@ -15,13 +15,17 @@ export async function askFinish(specName: string): Promise<"finish" | "notYet" |
 }
 
 export function summaryLine(summary: SpecSummary): string {
-  return vscode.l10n.t(
-    "{0} · {1} · {2} · ~{3}% estimated savings",
-    levelLabel(summary.level),
-    modelLabel(summary.usedModel),
-    summary.manualOverride ? vscode.l10n.t("changed by hand") : vscode.l10n.t("as recommended"),
-    summary.estimatedSavingsPct,
-  );
+  const how = summary.manualOverride ? vscode.l10n.t("changed by hand") : vscode.l10n.t("as recommended");
+  // 002 FR-010: no percentage when a locked value had no known cost.
+  return summary.savingsUnknown
+    ? vscode.l10n.t("{0} · {1} · {2} · no savings estimate", levelLabel(summary.level), modelLabel(summary.usedModel), how)
+    : vscode.l10n.t(
+        "{0} · {1} · {2} · ~{3}% estimated savings",
+        levelLabel(summary.level),
+        modelLabel(summary.usedModel),
+        how,
+        summary.estimatedSavingsPct,
+      );
 }
 
 export function showSummary(summary: SpecSummary): void {

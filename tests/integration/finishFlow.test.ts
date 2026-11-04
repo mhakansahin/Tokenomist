@@ -91,3 +91,19 @@ test("finishing without a lock only warns", async (t) => {
   assert.ok(env.ui.calls.some((c) => c.startsWith("warn:")));
   assert.deepEqual(tracker.summaries(), []);
 });
+
+// 002 FR-010.
+test("002: opusplan saves 20 %; Fable has no estimate", async (t) => {
+  for (const [model, pct, unknown] of [["opusplan", 20, undefined], ["fable", 0, true]] as const) {
+    const env = await setup();
+    const tracker = env.makeTracker();
+    await tracker.init();
+    t.after(() => tracker.dispose());
+    await tracker.onSpecSaved(env.workspace.activeFeature!);
+    await tracker.review(model);
+    const summary = (await tracker.finish())!;
+    assert.equal(summary.usedModel, model);
+    assert.equal(summary.estimatedSavingsPct, pct, model);
+    assert.equal(summary.savingsUnknown, unknown, model);
+  }
+});

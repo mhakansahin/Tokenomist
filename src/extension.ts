@@ -9,7 +9,7 @@ import { Tracker } from "./app/tracker";
 import { SummaryStore } from "./persistence/summaryStore";
 import { TrackingStore } from "./persistence/trackingStore";
 import { askOverride, askSessionMismatch, askUnlockedPlan, askWriting, confirmCleanup } from "./ui/gatePrompts";
-import { announceLock, announceRecommendation, pickModel } from "./ui/recommendation";
+import { announceLock, announceRecommendation, pickModel, warnAboutCredits } from "./ui/recommendation";
 import { passiveExplanation, PassiveCause, SHOW_STATUS_COMMAND, StatusBar } from "./ui/statusBar";
 import { readSettings } from "./ui/settings";
 import { openSetup } from "./ui/setup";
@@ -130,6 +130,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
       askOverride,
       askWriting,
       askFinish,
+      creditsWarning: warnAboutCredits,
       showSummary,
       confirmCleanup,
       info: (message) => void vscode.window.showInformationMessage(message),

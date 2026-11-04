@@ -31,3 +31,13 @@ test("the store records families from full ids and acknowledgements per session 
   assert.equal(store.isAcknowledged("s1", "lock-a"), true);
   assert.equal(store.isAcknowledged("s1", "lock-b"), false);
 });
+
+test("002: a requested value is kept exactly, otherwise the target family", () => {
+  const store = new SessionModels();
+  store.observe("a", "claude-opus-5-5", "opus[1m]");
+  store.observe("b", "claude-opus-5-5", null);
+  store.observe("c", "claude-sonnet-5-5", "gpt-5");
+  assert.equal(store.observed("a"), "opus[1m]");
+  assert.equal(store.observed("b"), "opus");
+  assert.equal(store.observed("c"), "sonnet");
+});

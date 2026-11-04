@@ -13,6 +13,7 @@ export type HookBody = Record<string, unknown> & {
   command_name?: string;
   from_model?: string | null;
   to_model?: string | null;
+  requested_model?: string | null;
   source?: string;
 };
 type Json = Record<string, unknown>;

@@ -2,7 +2,7 @@
 // the model is either observed from model-switch hooks or inferred from when the session started.
 
 import { promises as fs } from "node:fs";
-import { familyOf } from "../domain/modelValue";
+import { familyOf, parseModelValue } from "../domain/modelValue";
 import { ModelValue } from "../domain/types";
 
 const MAX_SESSIONS = 200;
@@ -42,12 +42,14 @@ export class SessionModels {
   private readonly models = new Map<string, ModelValue>();
   private readonly acknowledged = new Map<string, string>();
 
-  observe(sessionId: string | undefined, modelId: string | null | undefined): void {
-    const family = familyOf(modelId ?? "");
-    if (!sessionId || !family) {
+  /** `requested` (hook `requested_model`) keeps the `[1m]` variant; otherwise only the family of `modelId` is known. */
+  observe(sessionId: string | undefined, modelId: string | null | undefined, requested?: string | null): void {
+    const parsed = parseModelValue(requested);
+    const value = parsed.ok ? parsed.value : familyOf(modelId ?? "");
+    if (!sessionId || !value) {
       return;
     }
-    remember(this.models, sessionId, family);
+    remember(this.models, sessionId, value);
   }
 
   observed(sessionId: string | undefined): ModelValue | undefined {

@@ -84,13 +84,13 @@ description: "Task list for Özel Claude Model Eşlemesi"
 
 ### Tests (önce yaz)
 
-- [ ] T020 [P] [US2] `tests/unit/settingsSchema.test.ts`: `package.json`'daki `tokenomist.custom.*` `pattern` deseni, `parseModelValue`'nun T002'de kabul ettiği hiçbir girdiyi reddetmez (tek yönlü; desende satır içi bayrak yok — analyze I1)
-- [ ] T021 [P] [US2] `tests/integration/customMode.test.ts`'e ekle: geçersiz hücre (`gpt-5`) → `readSettings` hatası ve son geçerli değer; `review("gpt-5")` kilitlemez ve uyarır; `fable` hücresi/seçimi → `ui.creditsWarning` bir kez çağrılır (aynı oturumda ikinci kez çağrılmaz), değer yine kabul edilir (FR-004, FR-015)
+- [x] T020 [P] [US2] `tests/unit/settingsSchema.test.ts`: `package.json`'daki `tokenomist.custom.*` `pattern` deseni, `parseModelValue`'nun T002'de kabul ettiği hiçbir girdiyi reddetmez (tek yönlü; desende satır içi bayrak yok — analyze I1)
+- [x] T021 [P] [US2] `tests/integration/customMode.test.ts`'e ekle: geçersiz hücre (`gpt-5`) → `readSettings` hatası ve son geçerli değer; `review("gpt-5")` kilitlemez ve uyarır; `fable` hücresi/seçimi → `ui.creditsWarning` bir kez çağrılır (aynı oturumda ikinci kez çağrılmaz), değer yine kabul edilir (FR-004, FR-015)
 
 ### Implementation
 
-- [ ] T022 [US2] `src/app/tracker.ts`: `review` ve hücre değerlerinde `usesCredits` ise `ui.creditsWarning(value)` (oturum başına değer başına bir kez); geçersiz serbest değerde `ui.warn` ve kilit yok (FR-004, FR-015)
-- [ ] T023 [US2] `src/ui/gatePrompts.ts` veya `src/ui/recommendation.ts`: `creditsWarning(value)` bildirimi (kullanım kredisi + etkileşimli `/model` onayı metni, research R2); reddetme mesajları `reason`'a göre yerelleştirilmiş (`empty`, `default`, `notClaude`, `unknownVariant`)
+- [x] T022 [US2] `src/app/tracker.ts`: `review` ve hücre değerlerinde `usesCredits` ise `ui.creditsWarning(value)` (oturum başına değer başına bir kez); geçersiz serbest değerde `ui.warn` ve kilit yok (FR-004, FR-015)
+- [x] T023 [US2] `src/ui/recommendation.ts` (`warnAboutCredits`) + `src/ui/settings.ts` (`invalidValueText`): `creditsWarning(value)` bildirimi (kullanım kredisi + etkileşimli `/model` onayı metni, research R2); reddetme mesajları `reason`'a göre yerelleştirilmiş (`empty`, `default`, `notClaude`, `unknownVariant`)
 
 **Checkpoint**: C4, C5, C8 geçer
 
@@ -104,15 +104,15 @@ description: "Task list for Özel Claude Model Eşlemesi"
 
 ### Tests (önce yaz)
 
-- [ ] T024 [P] [US3] `tests/unit/gateDecisions.test.ts`'e ekle: contracts tablosundaki her satır `decidePreModelSwitch` üzerinden (`requested_model` + `to_model`); `askOverride.targetModel` artık `ModelValue | undefined`; kapı `decideExpansion` oturum modeli karşılaştırmasında `compatible` kullanılır (`opus[1m]` kilit + oturum `opus` → mismatch)
-- [ ] T025 [P] [US3] `tests/unit/sessionModels.test.ts`'e ekle: `observe(session, requested, to)` → `requested` geçerliyse onu, değilse `to` ailesini saklar
-- [ ] T026 [US3] `tests/integration/finishFlow.test.ts`'e ekle: `opusplan` kilidi → özet %20, `savingsUnknown` yok; `fable` kilidi → %0 ve `savingsUnknown: true`; `showSummary` "tahmin yok" bilgisini alır (FR-010)
+- [x] T024 [P] [US3] `tests/unit/gateDecisions.test.ts`'e ekle: contracts tablosundaki her satır `decidePreModelSwitch` üzerinden (`requested_model` + `to_model`); `askOverride.targetModel` artık `ModelValue | undefined`; kapı `decideExpansion` oturum modeli karşılaştırmasında `compatible` kullanılır (`opus[1m]` kilit + oturum `opus` → mismatch)
+- [x] T025 [P] [US3] `tests/unit/sessionModels.test.ts`'e ekle: `observe(session, to, requested?)` (001 çağrıları değişmesin diye `requested` üçüncü, isteğe bağlı parametre) → `requested` geçerliyse onu, değilse `to` ailesini saklar
+- [x] T026 [US3] `tests/integration/finishFlow.test.ts`'e ekle: `opusplan` kilidi → özet %20, `savingsUnknown` yok; `fable` kilidi → %0 ve `savingsUnknown: true`; `showSummary` "tahmin yok" bilgisini alır (FR-010)
 
 ### Implementation
 
-- [ ] T027 [US3] `src/domain/gateDecisions.ts`: `ModelSwitchInput.requested_model`; `decidePreModelSwitch` ve `decideExpansion` `compatible()` ile (T024)
-- [ ] T028 [US3] `src/app/sessionModels.ts` + `src/app/tracker.ts`: `observe` imzası `requested_model` alır; `handlePreModelSwitch` "güncelle" yolunda yeni kilit değeri `requested_model`'dan (ModelValue) gelir; `gateContext` local `model` değerini `parseModelValue` ile okur ve oturum modelini kilitle `compatible` üzerinden karşılaştırır (analyze U3, SC-004) (T025)
-- [ ] T029 [US3] `src/app/tracker.ts` `finish()` + `src/ui/summaries.ts`: `estimateSavings` sonucundaki `unknown` → `SpecSummary.savingsUnknown = true`; `summaryLine` bu durumda "~%X tahmini tasarruf" yerine "tahmin yok" gösterir (T026)
+- [x] T027 [US3] `src/domain/gateDecisions.ts`: `ModelSwitchInput.requested_model`; `decidePreModelSwitch` ve `decideExpansion` `compatible()` ile (T024)
+- [x] T028 [US3] `src/app/sessionModels.ts` + `src/app/tracker.ts`: `observe` imzası `requested_model` alır; `handlePreModelSwitch` "güncelle" yolunda yeni kilit değeri `requested_model`'dan (ModelValue) gelir; `gateContext` local `model` değerini `parseModelValue` ile okur ve oturum modelini kilitle `compatible` üzerinden karşılaştırır (analyze U3, SC-004) (T025)
+- [x] T029 [US3] `src/app/tracker.ts` `finish()` + `src/ui/summaries.ts`: `estimateSavings` sonucundaki `unknown` → `SpecSummary.savingsUnknown = true`; `summaryLine` bu durumda "~%X tahmini tasarruf" yerine "tahmin yok" gösterir (T026)
 
 **Checkpoint**: Tüm hikâyeler; 001 testleri yeşil
 
@@ -120,7 +120,7 @@ description: "Task list for Özel Claude Model Eşlemesi"
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T030 [P] `l10n/bundle.l10n.tr.json`: yeni metinler; `tests/unit/l10nCoverage.test.ts` yeşil (001 FR-025)
+- [x] T030 [P] `l10n/bundle.l10n.tr.json`: yeni metinler; `tests/unit/l10nCoverage.test.ts` yeşil (001 FR-025)
 - [ ] T031 [P] `README.md`: "Custom mode" bölümü (kabul edilen değerler tablosu, boş hücre = Balanced, Fable kredi uyarısı, `[1m]`/`opusplan` tasarruf ağırlıkları)
 - [ ] T032 (SC-004) quickstart C6'yı gerçek `claude -p` ile maliyetsiz doğrula (001'deki `e2e_claude.js` yaklaşımı: kilit `opus[1m]`, `/model opus[1m]` sorulmadan izin, `/model sonnet` → "Geri al" ile engellenir; her çağrı engellendiği için maliyet 0); sonuçları `specs/002-custom-claude-models/quickstart.md` sonuna "Doğrulama kaydı" olarak ekle
 - [ ] T033 `package.json` `version` → `0.2.0`; `npm test`, `runTests.js` (4 senaryo) ve `vsce package` temiz
