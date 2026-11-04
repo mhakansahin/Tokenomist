@@ -19,6 +19,7 @@
 
 - Q: Özel modun hücrelerini kullanıcı nereden düzenlesin? → A: Her hücre bir VS Code ayarıdır; ayrıca ilk ayar ekranında "Özel" seçilince hücre hücre hazır değer listesi + serbest yazım sunulur.
 - Q: Öneri ekranında elle model seçerken listede hangi değerler görünsün? → A: Haiku/Sonnet/Opus + Özel tablodaki değerler + en altta "Başka bir Claude modeli yaz…" serbest yazım satırı (FR-003 doğrulamalı).
+- (Plan bulgusu) Claude Code hook'larında `[1m]` bilgisi yalnızca istenen değerde geliyor; `opusplan` kilidinde kullanıcının `/model sonnet` isteği uyumlu mu? → Hayır; yalnızca Claude Code'un plan moduna girip çıkarken kendiliğinden yaptığı geçişler uyumludur (FR-009 güncellendi). Fable/`best` ek kullanım kredisi gerektirdiği için seçildiğinde kullanıcı uyarılır (FR-015).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -94,7 +95,8 @@ Kilit `opus[1m]` iken kullanıcı oturumda `/model opus[1m]` yazar. Bu aynı mod
 - **FR-014**: Öneri ekranındaki model seçim listesi sırasıyla şunları içermelidir: önerilen değer (en üstte, "önerilen" etiketiyle), Haiku/Sonnet/Opus, Özel tablodaki dolu hücrelerin değerleri (tekrarlar bir kez) ve "Başka bir Claude modeli yaz…" satırı. Serbest yazılan değer FR-003/FR-004 doğrulamasından geçmeden kilitlenmez; önerilenden farklı her seçim "elle değiştirildi" sayılır.
 - **FR-007**: Öneri ekranı, model seçim listesi, status bar, kilit bildirimleri ve özetler özel değerleri okunabilir adlarla göstermelidir (örn. `opus[1m]` → "Opus 1M", `opusplan` → "Opus Plan").
 - **FR-008**: Kilitlenen özel değer Claude Code ayarına aynen yazılmalı; spec bitince 001'deki orijinal model geri yükleme davranışı değişmeden çalışmalıdır.
-- **FR-009**: Kilit sırasındaki model geçişi denetiminde, gelen model kilitli değerle aynı aileye ve aynı bağlam varyantına sahipse geçiş kilitle uyumlu sayılmalıdır. Kilit `opusplan` ise Opus ve Sonnet ailelerine geçişlerin ikisi de uyumludur.
+- **FR-009**: Kilit sırasında kullanıcının istediği model geçişi, istenen değer kilitli değerle aynıysa ya da aynı aile ve aynı bağlam varyantındaysa uyumlu sayılmalıdır; bağlam varyantı bilinmiyorsa uyumsuz sayılır ve kullanıcıya sorulur. Kilit `opusplan` ise yalnızca `opusplan` isteği uyumludur; Claude Code'un plan moduna girip çıkarken kendiliğinden yaptığı Opus ↔ Sonnet geçişleri kilit ihlali sayılmaz.
+- **FR-015**: `fable`, `fable[1m]` veya `best` bir hücreye yazıldığında ya da öneri ekranında seçildiğinde sistem kullanıcıyı bir kez uyarmalıdır: bu modeller abonelik limiti dışında kullanım kredisiyle ücretlendirilir ve etkileşimli `/model` ile tek seferlik onay ister. Değer yine kabul edilir.
 - **FR-010**: Her kabul edilen değerin, Opus'a göre göreli bir tasarruf ağırlığı olmalıdır. Bilinen aileler 001 R9'daki ağırlıkları kullanır (Haiku 0.2, Sonnet 0.6, Opus 1.0). Geniş bağlam varyantları kendi ailelerinin ağırlığını kullanır. `opusplan`, Opus ve Sonnet ağırlıklarının ortalamasını (0.8) kullanır. Ağırlığı bilinmeyen değerler (`fable`, `best`, ailesi tanınmayan tam kimlikler) 1,0 sayılır ve özet o spec için "tahmin yok" notu gösterir.
 - **FR-011**: Kilit sürerken özel atama değişirse mevcut kilit değişmemelidir; yeni atama yalnızca sonraki analizlerde kullanılmalıdır.
 
