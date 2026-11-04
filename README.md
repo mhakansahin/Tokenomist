@@ -25,6 +25,23 @@ When a score is close to the threshold above it, the stronger model is chosen. S
 - `tokenomist.thresholds.medium` / `.complex` / `tokenomist.borderlineMargin`: when a score counts as medium or complex (defaults 35 / 65 / 5).
 - `tokenomist.writingModel.followMode`: write specs with the mode's model (Saver → Haiku, Quality → Opus) instead of always Sonnet.
 
+### Custom mode
+
+Pick **Custom** in *Tokenomist: Open Setup* or set `tokenomist.mode` to `custom`. You can then give each level its own Claude model, plus a model for spec writing. You can do this in the setup flow, or with the `tokenomist.custom.simple`, `.medium`, `.complex` and `.writing` settings. Any cell you leave empty uses the Balanced value.
+
+| Allowed value | Example | Savings weight (Opus = 1) |
+|---|---|---|
+| Aliases | `haiku`, `sonnet`, `opus` | 0.2 / 0.6 / 1.0 |
+| 1M-context variants | `sonnet[1m]`, `opus[1m]` | same as the family |
+| Opus for planning, Sonnet otherwise | `opusplan` | 0.8 |
+| Full Claude ids | `claude-opus-5-5`, `claude-sonnet-5-5[1m]` | from the family in the id |
+| Fable | `fable`, `fable[1m]`, `best` | unknown: no savings estimate |
+
+- Values are trimmed and lower-cased.
+- Anything that is not a Claude model, such as `gpt-5`, `default` or `opus[2m]`, is rejected, and the last valid value stays in use.
+- **Fable** and `best` are billed from usage credits outside your subscription limit. Claude Code asks for a one-time consent in an interactive `/model` session, and Tokenomist warns you once when you pick one.
+- While a spec is locked, switching with `/model` to the same value (for example `opus[1m]`) is not questioned. Switching to a different value or variant asks first.
+
 ## Commands
 
 | Command | What it does |

@@ -121,9 +121,9 @@ description: "Task list for Özel Claude Model Eşlemesi"
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 - [x] T030 [P] `l10n/bundle.l10n.tr.json`: yeni metinler; `tests/unit/l10nCoverage.test.ts` yeşil (001 FR-025)
-- [ ] T031 [P] `README.md`: "Custom mode" bölümü (kabul edilen değerler tablosu, boş hücre = Balanced, Fable kredi uyarısı, `[1m]`/`opusplan` tasarruf ağırlıkları)
-- [ ] T032 (SC-004) quickstart C6'yı gerçek `claude -p` ile maliyetsiz doğrula (001'deki `e2e_claude.js` yaklaşımı: kilit `opus[1m]`, `/model opus[1m]` sorulmadan izin, `/model sonnet` → "Geri al" ile engellenir; her çağrı engellendiği için maliyet 0); sonuçları `specs/002-custom-claude-models/quickstart.md` sonuna "Doğrulama kaydı" olarak ekle
-- [ ] T033 `package.json` `version` → `0.2.0`; `npm test`, `runTests.js` (4 senaryo) ve `vsce package` temiz
+- [x] T031 [P] `README.md`: "Custom mode" bölümü (kabul edilen değerler tablosu, boş hücre = Balanced, Fable kredi uyarısı, `[1m]`/`opusplan` tasarruf ağırlıkları)
+- [x] T032 (SC-004) quickstart C6'yı gerçek `claude -p` ile maliyetsiz doğrula (001'deki `e2e_claude.js` yaklaşımı: kilit `opus[1m]`, `/model opus[1m]` sorulmadan izin, `/model sonnet` → "Geri al" ile engellenir; her çağrı engellendiği için maliyet 0); sonuçları `specs/002-custom-claude-models/quickstart.md` sonuna "Doğrulama kaydı" olarak ekle
+- [x] T033 `package.json` `version` → `0.2.0`; `npm test`, `runTests.js` (4 senaryo) ve `vsce package` temiz
 
 ---
 

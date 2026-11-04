@@ -16,3 +16,22 @@
 | C10 | Kilitliyken Özel tabloyu değiştir | Kilit değişmez | FR-011 |
 
 C6, 001'deki gibi `claude -p` ve engelleyen hook ile **maliyet 0** olarak otomatik doğrulanabilir. C8'de Fable gerçekten **çağrılmaz**.
+
+## Doğrulama kaydı (2026-11-05)
+
+Ortam: Windows 11, Claude Code CLI 2.1.316, `@vscode/test-electron`, Node 22.
+
+| # | Nasıl doğrulandı | Sonuç |
+|---|---|---|
+| C1 | 001 testlerinin tümü (`npm test` içinde) değişmeden | ✅ |
+| C2 | `customMapping.test.ts`; ilk ayar QuickPick akışı elle denenmedi | ⏳ arayüz elle |
+| C3 | **Gerçek CLI** + Tracker: kilit `opus[1m]` → `settings.local.json` `model` = `"opus[1m]"`; VS Code testi: ayardaki ` OpusPlan ` → öneri `opusplan` | ✅ |
+| C4 | `modelValue.test.ts`, `settingsValidation.test.ts`, `customMode.test.ts` (`gpt-5` reddi) | ✅ |
+| C5 | `modelValue.test.ts` (` Claude-Opus-5-5 ` → `claude-opus-5-5`) | ✅ |
+| C6 | **Gerçek CLI**: `/model opus[1m]` sorulmadan geçti ("Set model to Opus 5.5 for this session only"); `/model sonnet` → "Geri al" → engellendi ("Tokenomist kept the locked model Opus 1M."); `/model opus` farklı varyant sayılıp soruldu. Üç CLI çağrısının maliyeti 0 | ✅ |
+| C7 | `customMode.test.ts` (serbest değer, `manualOverride`); InputBox elle denenmedi | ✅ / ⏳ arayüz |
+| C8 | `customMode.test.ts` (kredi uyarısı bir kez), `finishFlow.test.ts` (Fable → "tahmin yok"); Fable çağrılmadı | ✅ |
+| C9 | `finishFlow.test.ts`, `savings.test.ts` (`opusplan` → %20) | ✅ |
+| C10 | `customMode.test.ts` (kilitliyken tablo değişimi) | ✅ |
+
+Açık: C2 ve C7'nin arayüz kısmı, F5 ile elle denenmeli.
