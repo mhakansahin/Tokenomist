@@ -15,6 +15,11 @@
 - Q: Özel atama nerede tanımlansın? → A: Kendi 3 hücreli tablosu (ve spec yazımı hücresi) olan dördüncü bir "Özel" mod; boş hücreler Dengeli moddaki değeri alır. Tasarruf/Dengeli/Kalite değişmez.
 - Q: Tokenomist'in maliyetini bilmediği değerlerde tasarruf nasıl hesaplansın? → A: Ağırlık 1,0 (tasarruf %0) sayılır ve özette "tahmin yok" notu gösterilir.
 
+### Session 2026-11-04
+
+- Q: Özel modun hücrelerini kullanıcı nereden düzenlesin? → A: Her hücre bir VS Code ayarıdır; ayrıca ilk ayar ekranında "Özel" seçilince hücre hücre hazır değer listesi + serbest yazım sunulur.
+- Q: Öneri ekranında elle model seçerken listede hangi değerler görünsün? → A: Haiku/Sonnet/Opus + Özel tablodaki değerler + en altta "Başka bir Claude modeli yaz…" serbest yazım satırı (FR-003 doğrulamalı).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Bir seviyeye özel Claude modeli atamak (Priority: P1)
@@ -29,7 +34,7 @@ Geliştirici, karmaşık spec'lerde geniş bağlamlı Opus'u (`opus[1m]`), orta 
 
 1. **Given** mod "Özel" ve karmaşık seviyeye `opus[1m]` atanmış, **When** karmaşık bir spec analiz edilir, **Then** önerilen model `opus[1m]` olarak gösterilir.
 2. **Given** öneri onaylandı, **When** model kilitlenir, **Then** Claude Code'un modeli bu çalışma alanının yeni konuşmaları için `opus[1m]` olur ve status bar `… · Karmaşık · Opus 1M` gösterir.
-3. **Given** öneri ekranı açık, **When** kullanıcı model seçer, **Then** listede Haiku/Sonnet/Opus'un yanında kullanıcının tanımladığı özel değerler de bulunur.
+3. **Given** öneri ekranı açık, **When** kullanıcı model seçer, **Then** listede Haiku/Sonnet/Opus, Özel tablodaki dolu değerler ve en altta "Başka bir Claude modeli yaz…" satırı bulunur; bu satıra yazılan değer FR-003'e uymuyorsa kabul edilmez.
 4. **Given** mod Tasarruf, Dengeli veya Kalite, **When** bir spec analiz edilir, **Then** davranış 001 özelliğindeki mod tablolarıyla birebir aynıdır (Özel tablodaki değerler kullanılmaz).
 5. **Given** mod "Özel" ve basit seviye boş, **When** basit bir spec analiz edilir, **Then** Dengeli moddaki değer (Haiku) önerilir.
 
@@ -85,6 +90,8 @@ Kilit `opus[1m]` iken kullanıcı oturumda `/model opus[1m]` yazar. Bu aynı mod
 - **FR-005**: Değerler kaydedilmeden önce normalize edilmelidir: baştaki ve sondaki boşluklar silinir, harfler küçültülür.
 - **FR-006**: Tasarruf, Dengeli ve Kalite modlarının tabloları ve davranışı 001 FR-020 ile birebir aynı kalmalıdır; Özel tablodaki değerler yalnızca Özel mod seçiliyken kullanılır. Özel tablo tamamen boşsa Özel mod Dengeli ile aynı davranır.
 - **FR-012**: İlk ayar ekranı Özel modu da listelemeli ve seçildiğinde o anki etkin tabloyu (dolu hücreler + Dengeli'den gelen boş hücreler) göstermelidir.
+- **FR-013**: Özel modun dört hücresi (basit, orta, karmaşık, spec yazımı) ayrı ayrı VS Code ayarı olarak düzenlenebilmelidir. Ek olarak ilk ayar ekranında Özel seçildiğinde kullanıcı her hücre için hazır değerler listesinden (FR-003'teki takma adlar, geniş bağlam varyantları, `opusplan`, "boş bırak = Dengeli") seçim yapabilmeli ya da serbest değer yazabilmelidir. Her iki yoldan girilen değer FR-003/FR-004 doğrulamasından geçer; ilk ayar ekranında geçersiz değer kaydedilmeden önce reddedilir.
+- **FR-014**: Öneri ekranındaki model seçim listesi sırasıyla şunları içermelidir: önerilen değer (en üstte, "önerilen" etiketiyle), Haiku/Sonnet/Opus, Özel tablodaki dolu hücrelerin değerleri (tekrarlar bir kez) ve "Başka bir Claude modeli yaz…" satırı. Serbest yazılan değer FR-003/FR-004 doğrulamasından geçmeden kilitlenmez; önerilenden farklı her seçim "elle değiştirildi" sayılır.
 - **FR-007**: Öneri ekranı, model seçim listesi, status bar, kilit bildirimleri ve özetler özel değerleri okunabilir adlarla göstermelidir (örn. `opus[1m]` → "Opus 1M", `opusplan` → "Opus Plan").
 - **FR-008**: Kilitlenen özel değer Claude Code ayarına aynen yazılmalı; spec bitince 001'deki orijinal model geri yükleme davranışı değişmeden çalışmalıdır.
 - **FR-009**: Kilit sırasındaki model geçişi denetiminde, gelen model kilitli değerle aynı aileye ve aynı bağlam varyantına sahipse geçiş kilitle uyumlu sayılmalıdır. Kilit `opusplan` ise Opus ve Sonnet ailelerine geçişlerin ikisi de uyumludur.
