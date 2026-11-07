@@ -8,3 +8,4 @@ out/
 Thumbs.db
 *.tmp
 .claude/settings.local.json
+.specify/extensions/.cache/
