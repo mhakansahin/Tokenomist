@@ -13,6 +13,8 @@ export interface StatusView {
   pendingWritingModel?: ModelValue;
   /** Spec Kit is installed but has no active feature yet (003 FR-002). */
   noFeature?: boolean;
+  /** 004: in automatic mode the recommendation is locked when the plan starts. */
+  automation?: "auto" | "ask";
 }
 
 export const SHOW_STATUS_COMMAND = "tokenomist.showStatusDetails";
@@ -102,11 +104,17 @@ function describe(view: StatusView): { text: string; tooltip: string; command?: 
         command: "tokenomist.analyzeSpec",
       };
     case "awaitingApproval":
-      return {
-        text: `$(warning) ${name} · ${levelLabel(analysis?.level)} → ${analysis ? modelLabel(analysis.recommendedModel) : "?"}?`,
-        tooltip: vscode.l10n.t("A model is recommended for this spec. Click to review and lock it."),
-        command: "tokenomist.showRecommendation",
-      };
+      return view.automation === "auto"
+        ? {
+            text: `$(sparkle) ${name} · ${levelLabel(analysis?.level)} → ${analysis ? modelLabel(analysis.recommendedModel) : "?"} (${vscode.l10n.t("auto")})`,
+            tooltip: vscode.l10n.t("Automatic mode: this model is locked when the plan starts. Click to choose another one now."),
+            command: "tokenomist.showRecommendation",
+          }
+        : {
+            text: `$(warning) ${name} · ${levelLabel(analysis?.level)} → ${analysis ? modelLabel(analysis.recommendedModel) : "?"}?`,
+            tooltip: vscode.l10n.t("A model is recommended for this spec. Click to review and lock it."),
+            command: "tokenomist.showRecommendation",
+          };
     case "locked":
     case "completionPending":
       return {

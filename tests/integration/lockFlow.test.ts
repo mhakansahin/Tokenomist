@@ -205,3 +205,18 @@ test("a broken settings.local.json is never overwritten", async () => {
     await tracker.dispose();
   }
 });
+
+// Regression (0.2.0): an allowed command must not start a spec-writing phase that overwrites the lock.
+test("an allowed phase command keeps the locked model in the settings and starts no writing phase", async (t) => {
+  const env = await setup();
+  const tracker = env.makeTracker();
+  const { port, token } = await tracker.init();
+  t.after(() => tracker.dispose());
+  await tracker.onSpecSaved(env.workspace.activeFeature!);
+  await tracker.review("opus");
+  // A brand-new session (no transcript yet) runs the locked model → the gate allows the command.
+  assert.deepEqual(await post(port, "/tokenomist/expansion", { command_name: "speckit-tasks", cwd: env.root, session_id: "n" }, token), {});
+  assert.deepEqual(await post(port, "/tokenomist/expansion", { command_name: "deploy", cwd: env.root, session_id: "n" }, token), {});
+  assert.equal(tracker.pendingWriting(), undefined);
+  assert.equal((await readLocal(env.root))!.model, "opus");
+});

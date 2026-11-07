@@ -95,6 +95,9 @@ export class FakeUi implements TrackerUi {
   showSummary(summary: SpecSummary): void {
     this.calls.push(`showSummary:${summary.usedModel}`);
   }
+  autoLocked(model: string): void {
+    this.calls.push(`autoLocked:${model}`);
+  }
   creditsWarning(value: string): void {
     this.calls.push(`creditsWarning:${value}`);
   }
@@ -124,9 +127,18 @@ export async function setup(options: { localSettings?: unknown } = {}) {
   const globalMemento = new MemoryMemento();
   const ledger = new RestoreLedger(path.join(root, ".tokenomist-global", "restore-ledger.json"));
   const ui = new FakeUi();
-  const newConversations: number[] = [];
+  /** Prompts the tracker asked to prefill in new conversations (004). */
+  const newConversations: string[] = [];
+  const prefillWorks = { value: true };
   const settingsStore = new ClaudeSettingsStore(root, path.join(root, "user-settings.json"));
-  const settings: TrackerSettings = { mode: "balanced", thresholds: { ...DEFAULT_THRESHOLDS }, writingModel: "sonnet", custom: {} };
+  // "ask" keeps the 001/002 flows unchanged in these tests (004 SC-003); the product default is "auto".
+  const settings: TrackerSettings = {
+    mode: "balanced",
+    thresholds: { ...DEFAULT_THRESHOLDS },
+    writingModel: "sonnet",
+    custom: {},
+    automation: "ask",
+  };
   const makeTracker = (overrides: Partial<TrackerDeps> = {}) =>
     new Tracker({
       workspace,
@@ -137,11 +149,14 @@ export async function setup(options: { localSettings?: unknown } = {}) {
       sessions: new SessionModels(),
       settings: () => settings,
       ui,
-      newConversation: async () => void newConversations.push(Date.now()),
+      newConversation: async (prompt?: string) => {
+        newConversations.push(prompt ?? "");
+        return prompt !== undefined && prefillWorks.value;
+      },
       t: (message, ...args) => message.replace(/\{(\d+)\}/g, (_, i) => String(args[Number(i)])),
       ...overrides,
     });
-  return { root, workspace, memento, ui, newConversations, settingsStore, settings, ledger, makeTracker };
+  return { root, workspace, memento, ui, newConversations, prefillWorks, settingsStore, settings, ledger, makeTracker };
 }
 
 export async function readLocal(root: string): Promise<Record<string, unknown> | undefined> {

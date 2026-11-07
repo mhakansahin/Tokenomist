@@ -20,5 +20,9 @@
   "config.custom.medium": "Özel mod: **orta** spec'lerin modeli, örn. `sonnet` veya `opusplan`. Boş = Dengeli (Sonnet).",
   "config.custom.complex": "Özel mod: **karmaşık** spec'lerin modeli, örn. `opus` veya `opus[1m]`. Boş = Dengeli (Opus).",
   "config.custom.writing": "Özel mod: spec yazılırken (specify, clarify) kullanılacak model. Boş = Sonnet.",
-  "config.custom.invalid": "opus, opus[1m], opusplan veya claude-opus-5-5 gibi bir Claude model değeri girin ya da boş bırakın."
+  "config.custom.invalid": "opus, opus[1m], opusplan veya claude-opus-5-5 gibi bir Claude model değeri girin ya da boş bırakın.",
+  "config.automation": "Tokenomist'in modelleri sormadan yönetip yönetmeyeceği.",
+  "config.automation.auto": "Otomatik: plan başlarken önerilen modeli kilitle ve komutları sormadan yeni konuşmaya taşı (komut hazır yazılı).",
+  "config.automation.ask": "Sorarak: kilitlemeden, konuşma değiştirmeden ve bitirmeden önce sor.",
+  "command.changeModel": "Kilitli Modeli Değiştir"
 }

@@ -11,6 +11,8 @@ export type HookBody = Record<string, unknown> & {
   cwd?: string;
   transcript_path?: string;
   command_name?: string;
+  /** The line the user typed, e.g. "/speckit-plan use the auth module" (UserPromptExpansion). */
+  prompt?: string;
   from_model?: string | null;
   to_model?: string | null;
   requested_model?: string | null;

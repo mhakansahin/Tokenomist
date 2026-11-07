@@ -65,6 +65,13 @@ it("002: custom mode cells from VS Code settings drive the recommendation", asyn
   }
 });
 
+it("004: without Claude Code's commands the new-conversation fallback reports false instead of failing", async () => {
+  const tokenomist = await api();
+  const commands = await vscode.commands.getCommands(true);
+  assert.ok(!commands.includes("claude-vscode.primaryEditor.open"), "the test profile has no Claude Code");
+  assert.equal(await tokenomist.newConversation!("/speckit-plan"), false);
+});
+
 export async function run(): Promise<void> {
   const scenario = process.env.TOKENOMIST_SCENARIO ?? "main";
   if (scenario !== "main") {

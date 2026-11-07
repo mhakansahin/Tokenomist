@@ -20,5 +20,9 @@
   "config.custom.medium": "Custom mode: model for **medium** specs, e.g. `sonnet` or `opusplan`. Empty = Balanced (Sonnet).",
   "config.custom.complex": "Custom mode: model for **complex** specs, e.g. `opus` or `opus[1m]`. Empty = Balanced (Opus).",
   "config.custom.writing": "Custom mode: model while the spec is written (specify, clarify). Empty = Sonnet.",
-  "config.custom.invalid": "Enter a Claude model value such as opus, opus[1m], opusplan or claude-opus-5-5, or leave it empty."
+  "config.custom.invalid": "Enter a Claude model value such as opus, opus[1m], opusplan or claude-opus-5-5, or leave it empty.",
+  "config.automation": "Whether Tokenomist manages models without asking.",
+  "config.automation.auto": "Automatic: lock the recommended model when the plan starts and move commands to a new conversation (with the command ready) without asking.",
+  "config.automation.ask": "Ask: show a dialog before locking, switching conversations and finishing.",
+  "command.changeModel": "Change Locked Model"
 }

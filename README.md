@@ -11,6 +11,19 @@ Tokenomist picks the Claude model for each [Spec Kit](https://github.com/github/
 
 > **Note:** Claude Code reads the model only when a conversation starts. A lock applies to **new** conversations, so Tokenomist offers to start one. If you run `/speckit-plan` without a lock, or `/speckit-tasks` in an old conversation, Tokenomist asks first.
 
+## Automatic mode (default)
+
+With `tokenomist.automation` set to `auto`, Tokenomist manages the model without asking:
+
+- While the spec is written, the recommendation only updates in the status bar.
+- When you run `/speckit-plan`, the latest recommendation is locked. If your current conversation is not on that model, Tokenomist stops the command and opens a new conversation **with the same command already typed in**. You only press **Enter**.
+- `/speckit-tasks`, `/speckit-implement` and `/speckit-specify` move to a new conversation the same way when needed.
+- When all tasks are done, the spec is finished and your previous model is restored.
+
+Use **Tokenomist: Change Locked Model** to pick another model at any time. A `/model` switch while a spec is locked is still asked about. Set `tokenomist.automation` to `ask` to get a dialog before every change.
+
+> Opening a conversation with the command already typed uses a Claude Code command that is not documented. If a Claude Code update removes it, Tokenomist opens an empty new conversation instead and tells you to type the command again.
+
 ## Modes
 
 | Mode | Simple | Medium | Complex |

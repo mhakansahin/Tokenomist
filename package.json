@@ -2,7 +2,7 @@
   "name": "tokenomist",
   "displayName": "Tokenomist",
   "description": "%description%",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "mhakansahin61",
   "license": "UNLICENSED",
   "repository": {
@@ -61,6 +61,11 @@
         "command": "tokenomist.cleanClaudeSettings",
         "title": "%command.cleanClaudeSettings%",
         "category": "Tokenomist"
+      },
+      {
+        "command": "tokenomist.changeModel",
+        "title": "%command.changeModel%",
+        "category": "Tokenomist"
       }
     ],
     "menus": {
@@ -74,6 +79,20 @@
     "configuration": {
       "title": "Tokenomist",
       "properties": {
+        "tokenomist.automation": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "ask"
+          ],
+          "default": "auto",
+          "scope": "window",
+          "enumDescriptions": [
+            "%config.automation.auto%",
+            "%config.automation.ask%"
+          ],
+          "markdownDescription": "%config.automation%"
+        },
         "tokenomist.mode": {
           "type": "string",
           "enum": [

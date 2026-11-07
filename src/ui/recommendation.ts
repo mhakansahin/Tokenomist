@@ -73,6 +73,18 @@ export async function inputModelValue(title: string, value?: string): Promise<Mo
   return parsed.ok ? parsed.value : undefined;
 }
 
+/** 004 FR-002: locked without asking; the user can still pick another model. */
+export function announceAutoLock(model: ModelValue): void {
+  const change = vscode.l10n.t("Change model");
+  void vscode.window
+    .showInformationMessage(vscode.l10n.t("Tokenomist locked {0} for this spec (automatic mode).", modelLabel(model)), change)
+    .then((choice) => {
+      if (choice === change) {
+        void vscode.commands.executeCommand("tokenomist.changeModel");
+      }
+    });
+}
+
 /** 002 FR-015, research.md R2. */
 export function warnAboutCredits(value: ModelValue): void {
   void vscode.window.showWarningMessage(

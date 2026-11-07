@@ -35,6 +35,7 @@ export function readSettings(options: { warn?: boolean } = {}): TrackerSettings 
     thresholds: thresholds.thresholds,
     writingModel: writingValueFor(mode, config.get<boolean>("writingModel.followMode") === true, custom.table),
     custom: custom.table,
+    automation: config.get("automation") === "ask" ? "ask" : "auto",
   };
 }
 

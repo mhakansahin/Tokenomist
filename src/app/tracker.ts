@@ -51,6 +51,8 @@ export interface TrackerSettings {
   writingModel: ModelValue;
   /** Cells of the custom mode (002 FR-001); ignored by the preset modes. */
   custom: CustomTable;
+  /** 004 FR-001: "auto" applies the gate decisions without asking; "ask" is the 001/002 behaviour. */
+  automation: "auto" | "ask";
 }
 
 export interface TrackerUi {
@@ -58,6 +60,8 @@ export interface TrackerUi {
   pickModel(analysis: SpecAnalysis | undefined): Promise<{ model: ModelValue; manualOverride: boolean } | undefined>;
   /** Tells the user the lock applies to new conversations and offers to start one. */
   modelLocked(model: ModelValue): void;
+  /** 004 FR-002: the recommendation was locked without asking; offers to change it. */
+  autoLocked(model: ModelValue): void;
   askUnlockedPlan(recommended: ModelValue | undefined): Promise<"approve" | "change" | "continue" | undefined>;
   askSessionMismatch(locked: ModelValue): Promise<"newConversation" | "continue" | undefined>;
   askOverride(locked: ModelValue, target: ModelValue | undefined): Promise<"update" | "revert" | undefined>;
@@ -80,7 +84,11 @@ export interface TrackerDeps {
   sessions: SessionModels;
   settings(): TrackerSettings;
   ui: TrackerUi;
-  newConversation(): Promise<void>;
+  /**
+   * Opens a new Claude Code conversation; with `prompt`, tries to put it in the input box (004 research R1).
+   * Resolves to true only when the prompt was prefilled.
+   */
+  newConversation(prompt?: string): Promise<boolean>;
   /** vscode.l10n.t compatible: `{0}` placeholders. */
   t(message: string, ...args: Array<string | number>): string;
   log?(message: string): void;
@@ -88,6 +96,9 @@ export interface TrackerDeps {
 }
 
 export type PassiveReason = "settingsUnreadable";
+
+/** 004 FR-010: a repeated command within this window does not open another conversation. */
+const REOPEN_GUARD_MS = 10_000;
 
 /** An unbound spec-writing intervention is undone after this long (data-model.md PendingWriting). */
 const PENDING_WRITING_TTL_MS = 24 * 3600_000;
@@ -102,6 +113,8 @@ export class Tracker {
   private server: HookServer | undefined;
   private lastFeatureDir: string | undefined;
   private readonly creditsWarned = new Set<ModelValue>();
+  /** Command name → when Tokenomist last opened a conversation for it (004 FR-010). */
+  private readonly openedFor = new Map<string, number>();
   passiveReason: PassiveReason | undefined;
 
   constructor(private readonly deps: TrackerDeps) {}
@@ -215,6 +228,43 @@ export class Tracker {
     if (feature && this.activeTracking()?.state === "awaitingApproval") {
       await this.analyze(feature, { notify: true });
     }
+  }
+
+  /** 004 research R2: when the plan appears without the gate (hooks offline), lock the latest recommendation. */
+  async onPlanCreated(feature: ActiveFeature): Promise<void> {
+    const tracking = this.deps.trackingStore.get(feature.featureDir);
+    const recommended = tracking?.analysis?.recommendedModel;
+    if (!this.automatic() || feature.featureDir !== this.deps.workspace.activeFeature?.featureDir || !recommended) {
+      return;
+    }
+    if (tracking.state === "writing" || tracking.state === "awaitingApproval") {
+      if (await this.lock(recommended, false, { announce: false })) {
+        this.deps.ui.autoLocked(recommended);
+      }
+    }
+  }
+
+  /** `tokenomist.changeModel` (004 FR-002): pick another model for a locked spec. */
+  async changeLockedModel(): Promise<void> {
+    const tracking = this.lockedTracking();
+    if (!tracking?.lock) {
+      this.deps.ui.warn(this.deps.t("There is no locked spec to change."));
+      return;
+    }
+    const choice = await this.deps.ui.pickModel(tracking.analysis);
+    if (!choice || choice.model === tracking.lock.model) {
+      return;
+    }
+    const now = this.nowIso();
+    const segments = tracking.lock.segments.map((s) => (s.to ? s : { ...s, to: now }));
+    await this.deps.trackingStore.save({
+      ...tracking,
+      lock: { ...tracking.lock, model: choice.model, manualOverride: true, segments: [...segments, { model: choice.model, from: now }] },
+    });
+    await this.syncModelKey();
+    this.emit();
+    this.warnAboutCredits(choice.model);
+    this.deps.ui.modelLocked(choice.model);
   }
 
   /** `tokenomist.analyzeSpec`: analyse on demand, plan or not (FR-024). */
@@ -405,7 +455,7 @@ export class Tracker {
     if (!tracking) {
       return;
     }
-    const answer = await this.deps.ui.askFinish(tracking.spec.name);
+    const answer = this.automatic() ? "finish" : await this.deps.ui.askFinish(tracking.spec.name);
     if (answer === "finish") {
       await this.finish();
     } else if (answer === "notYet" && tracking.state === "completionPending") {
@@ -422,36 +472,45 @@ export class Tracker {
   // ------------------------------------------------------------------ hook handlers
 
   private async handleExpansion(body: HookBody, signal: AbortSignal): Promise<Record<string, unknown>> {
-    const { ui, t, sessions } = this.deps;
+    const { ui, sessions } = this.deps;
     const tracking = this.activeTracking();
     const decision = decideExpansion(body, await this.gateContext(body, tracking));
     const command = body.command_name ?? "";
+    const prompt = typeof body.prompt === "string" && body.prompt.trim() ? body.prompt : `/${command}`;
+    const auto = this.automatic();
     switch (decision.kind) {
       case "allow":
+        return {};
       case "startWriting":
         await this.startWriting();
         return {};
       case "askWriting": {
         await this.startWriting();
-        if (sessions.isAcknowledged(body.session_id, "writing")) {
-          return {};
+        if (!auto) {
+          if (sessions.isAcknowledged(body.session_id, "writing")) {
+            return {};
+          }
+          if ((await ui.askWriting(decision.model)) !== "newConversation") {
+            sessions.acknowledge(body.session_id, "writing");
+            return {};
+          }
         }
-        const answer = await ui.askWriting(decision.model);
-        if (answer !== "newConversation") {
-          sessions.acknowledge(body.session_id, "writing");
-          return {};
-        }
-        return this.blockForNewConversation(
-          signal,
-          t("Tokenomist set the spec-writing model to {0}. Run /{1} again in the new conversation.", modelLabelOf(decision.model), command),
-        );
+        return this.blockForNewConversation(signal, { why: "writing", command, prompt, model: decision.model });
       }
       case "askUnlockedPlan": {
+        const recommended = decision.recommendedModel;
+        if (auto && recommended) {
+          // 004 FR-004, research R2: lock the latest recommendation as the plan starts.
+          if (!(await this.lock(recommended, false, { announce: false }))) {
+            return {};
+          }
+          ui.autoLocked(recommended);
+          return this.blockForNewConversation(signal, { why: "locked", command, prompt, model: recommended });
+        }
         const ackKey = `unlocked:${this.deps.workspace.activeFeature?.featureDir}`;
         if (sessions.isAcknowledged(body.session_id, ackKey)) {
           return {};
         }
-        const recommended = decision.recommendedModel;
         const answer = await ui.askUnlockedPlan(recommended);
         let choice: { model: ModelValue; manualOverride: boolean } | undefined;
         if (answer === "approve" && recommended) {
@@ -466,29 +525,20 @@ export class Tracker {
         if (!(await this.lock(choice.model, choice.manualOverride, { announce: false }))) {
           return {};
         }
-        return this.blockForNewConversation(
-          signal,
-          t("Tokenomist locked the model to {0}. Run /{1} again in the new conversation.", modelLabelOf(choice.model), command),
-        );
+        return this.blockForNewConversation(signal, { why: "locked", command, prompt, model: choice.model });
       }
       case "askSessionMismatch": {
-        const lockKey = this.lockKey(tracking);
-        if (sessions.isAcknowledged(body.session_id, lockKey)) {
-          return {};
+        if (!auto) {
+          const lockKey = this.lockKey(tracking);
+          if (sessions.isAcknowledged(body.session_id, lockKey)) {
+            return {};
+          }
+          if ((await ui.askSessionMismatch(decision.lockedModel)) !== "newConversation") {
+            sessions.acknowledge(body.session_id, lockKey);
+            return {};
+          }
         }
-        const answer = await ui.askSessionMismatch(decision.lockedModel);
-        if (answer !== "newConversation") {
-          sessions.acknowledge(body.session_id, lockKey);
-          return {};
-        }
-        return this.blockForNewConversation(
-          signal,
-          t(
-            "This conversation may not use the locked model {0}. Run /{1} again in the new conversation.",
-            modelLabelOf(decision.lockedModel),
-            command,
-          ),
-        );
+        return this.blockForNewConversation(signal, { why: "mismatch", command, prompt, model: decision.lockedModel });
       }
     }
   }
@@ -528,10 +578,42 @@ export class Tracker {
     return preModelSwitchResponse({ kind: "allow" });
   }
 
-  private async blockForNewConversation(signal: AbortSignal, reason: string): Promise<Record<string, unknown>> {
-    if (!signal.aborted) {
-      await this.deps.newConversation().catch((err) => this.deps.log?.(`newConversation failed: ${err}`));
+  /**
+   * Stops the command and moves it to a new conversation that starts with the right model, prefilled
+   * when Claude Code allows it (004 FR-003, FR-007, FR-008, FR-010).
+   */
+  private async blockForNewConversation(
+    signal: AbortSignal,
+    move: { why: "writing" | "locked" | "mismatch"; command: string; prompt: string; model: ModelValue },
+  ): Promise<Record<string, unknown>> {
+    const { t } = this.deps;
+    const label = modelLabelOf(move.model);
+    const last = this.openedFor.get(move.command);
+    if (last !== undefined && this.nowMs() - last < REOPEN_GUARD_MS) {
+      return expansionResponse({
+        kind: "block",
+        reason: t("Tokenomist already opened a new conversation for /{0}. Continue there.", move.command),
+      });
     }
+    let prefilled = false;
+    if (!signal.aborted) {
+      this.openedFor.set(move.command, this.nowMs());
+      prefilled = await this.deps.newConversation(move.prompt).catch((err) => {
+        this.deps.log?.(`newConversation failed: ${err}`);
+        return false;
+      });
+    }
+    const reason = prefilled
+      ? {
+          writing: t("Tokenomist set the spec-writing model to {0} and opened a new conversation with /{1} ready. Press Enter there.", label, move.command),
+          locked: t("Tokenomist locked the model to {0} and opened a new conversation with /{1} ready. Press Enter there.", label, move.command),
+          mismatch: t("This conversation does not use the locked model {0}. Tokenomist opened a new conversation with /{1} ready. Press Enter there.", label, move.command),
+        }[move.why]
+      : {
+          writing: t("Tokenomist set the spec-writing model to {0}. Run /{1} again in the new conversation.", label, move.command),
+          locked: t("Tokenomist locked the model to {0}. Run /{1} again in the new conversation.", label, move.command),
+          mismatch: t("This conversation may not use the locked model {0}. Run /{1} again in the new conversation.", label, move.command),
+        }[move.why];
     return expansionResponse({ kind: "block", reason });
   }
 
@@ -591,7 +673,7 @@ export class Tracker {
     }
     await this.deps.trackingStore.save(tracking);
     this.emit();
-    if (options.notify && !unchanged && tracking.state === "awaitingApproval") {
+    if (options.notify && !unchanged && tracking.state === "awaitingApproval" && !this.automatic()) {
       this.deps.ui.recommendationReady(analysis);
     }
     return analysis;
@@ -742,6 +824,10 @@ export class Tracker {
       }
       return undefined;
     }
+  }
+
+  private automatic(): boolean {
+    return this.deps.settings().automation === "auto";
   }
 
   /** Once per value while VS Code runs (002 FR-015). */

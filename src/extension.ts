@@ -9,19 +9,23 @@ import { Tracker } from "./app/tracker";
 import { SummaryStore } from "./persistence/summaryStore";
 import { TrackingStore } from "./persistence/trackingStore";
 import { askOverride, askSessionMismatch, askUnlockedPlan, askWriting, confirmCleanup } from "./ui/gatePrompts";
-import { announceLock, announceRecommendation, pickModel, warnAboutCredits } from "./ui/recommendation";
+import { announceAutoLock, announceLock, announceRecommendation, pickModel, warnAboutCredits } from "./ui/recommendation";
 import { noFeatureExplanation, passiveExplanation, PassiveCause, SHOW_STATUS_COMMAND, StatusBar } from "./ui/statusBar";
 import { readSettings } from "./ui/settings";
 import { openSetup } from "./ui/setup";
 import { askFinish, showSummaries, showSummary } from "./ui/summaries";
 
 const NEW_CONVERSATION_COMMAND = "claude-vscode.newConversation";
+// Undocumented: opens a new Claude Code chat tab with `prompt` in its input box, not sent (004 research R1).
+const OPEN_WITH_PROMPT_COMMAND = "claude-vscode.primaryEditor.open";
 
 /** Returned from activate for integration tests. */
 export interface TokenomistApi {
   tracker: Tracker | undefined;
   status: StatusBar;
   onboardingOffered: boolean;
+  /** Opens a Claude Code conversation, prefilled when possible (004); set once tracking starts. */
+  newConversation?: (prompt?: string) => Promise<boolean>;
 }
 
 const ONBOARDED_KEY = "tokenomist.onboarded";
@@ -76,6 +80,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
       showSummaries(new SummaryStore(context.globalState).list()),
     ),
     vscode.commands.registerCommand("tokenomist.openSetup", openSetup),
+    vscode.commands.registerCommand("tokenomist.changeModel", async () => {
+      if (!tracker) {
+        return explainPassive(status.current.passive);
+      }
+      await tracker.changeLockedModel();
+    }),
     vscode.commands.registerCommand("tokenomist.cleanClaudeSettings", async () => {
       if (!tracker) {
         return explainPassive(status.current.passive);
@@ -139,9 +149,23 @@ async function startTracking(
 ): Promise<void> {
   await watcher.start();
   const sessions = new SessionModels();
-  const startNewConversation = async () => {
-    await vscode.commands.executeCommand(NEW_CONVERSATION_COMMAND);
+  const startNewConversation = async (prompt?: string): Promise<boolean> => {
+    if (prompt) {
+      try {
+        await vscode.commands.executeCommand(OPEN_WITH_PROMPT_COMMAND, undefined, prompt);
+        return true;
+      } catch (err) {
+        log(`Could not open a conversation with the command ready (${err}); opening an empty one.`);
+      }
+    }
+    try {
+      await vscode.commands.executeCommand(NEW_CONVERSATION_COMMAND);
+    } catch (err) {
+      log(`Could not open a new Claude Code conversation: ${err}`);
+    }
+    return false;
   };
+  api.newConversation = startNewConversation;
   tracker = new Tracker({
     workspace: watcher,
     settingsStore: new ClaudeSettingsStore(folder.uri.fsPath),
@@ -153,7 +177,8 @@ async function startTracking(
     ui: {
       recommendationReady: announceRecommendation,
       pickModel,
-      modelLocked: (model) => announceLock(model, startNewConversation),
+      modelLocked: (model) => announceLock(model, async () => void (await startNewConversation())),
+      autoLocked: announceAutoLock,
       askUnlockedPlan,
       askSessionMismatch,
       askOverride,
@@ -179,12 +204,14 @@ async function startTracking(
       tracking: tracker?.activeTracking(),
       pendingWritingModel: tracker?.pendingWriting()?.writingModel,
       noFeature: watcher.activeFeature === undefined,
+      automation: readSettings().automation,
     });
   context.subscriptions.push(
     tracker.onDidChange(render),
     watcher.onFeatureChanged((feature) => void tracker?.onFeatureChanged(feature)),
     watcher.onSpecSaved((feature) => void tracker?.onSpecSaved(feature)),
     watcher.onTasksChanged((feature) => void tracker?.onTasksChanged(feature)),
+    watcher.onPlanCreated((feature) => void tracker?.onPlanCreated(feature)),
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration("tokenomist")) {
         readSettings({ warn: true });
