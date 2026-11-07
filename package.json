@@ -3,8 +3,16 @@
   "displayName": "Tokenomist",
   "description": "%description%",
   "version": "0.2.0",
-  "publisher": "tokenomist",
+  "publisher": "mhakansahin61",
   "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mhakansahin/Tokenomist.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mhakansahin/Tokenomist/issues"
+  },
+  "homepage": "https://github.com/mhakansahin/Tokenomist#readme",
   "engines": {
     "vscode": "^1.94.0"
   },

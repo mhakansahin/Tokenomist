@@ -7,7 +7,8 @@ import * as path from "node:path";
 import { LEDGER_FILE, readLedger } from "./app/restoreLedger";
 import { isEmptySettings, parseSettings, removeTokenomistHooks, restoreModel, serializeSettings } from "./domain/claudeSettingsDoc";
 
-const EXTENSION_STORAGE_ID = "tokenomist.tokenomist";
+/** `<publisher>.<name>` from package.json; VS Code names the global storage folder after it. */
+export const EXTENSION_STORAGE_ID = "mhakansahin61.tokenomist";
 const PRODUCTS = ["Code", "Code - Insiders", "VSCodium"];
 
 export function ledgerCandidates(platform: NodeJS.Platform, env: NodeJS.ProcessEnv, home: string): string[] {
