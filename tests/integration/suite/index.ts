@@ -69,7 +69,7 @@ export async function run(): Promise<void> {
   const scenario = process.env.TOKENOMIST_SCENARIO ?? "main";
   if (scenario !== "main") {
     await runActivationScenario(scenario as Scenario);
-    console.log(`ok - passive activation: ${scenario}`);
+    console.log(`ok - activation scenario: ${scenario}`);
     return;
   }
   const failures: string[] = [];

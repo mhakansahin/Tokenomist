@@ -57,8 +57,9 @@ export class SpecKitWatcher implements vscode.Disposable {
     );
   }
 
+  /** Spec Kit is installed: `.specify` exists, even before the first feature (003 FR-001). */
   async isSpecKitWorkspace(): Promise<boolean> {
-    return exists(path.join(this.root, ".specify", "feature.json"));
+    return exists(path.join(this.root, ".specify"));
   }
 
   async readSpec(feature = this.active): Promise<string | undefined> {

@@ -10,7 +10,7 @@ import { SummaryStore } from "./persistence/summaryStore";
 import { TrackingStore } from "./persistence/trackingStore";
 import { askOverride, askSessionMismatch, askUnlockedPlan, askWriting, confirmCleanup } from "./ui/gatePrompts";
 import { announceLock, announceRecommendation, pickModel, warnAboutCredits } from "./ui/recommendation";
-import { passiveExplanation, PassiveCause, SHOW_STATUS_COMMAND, StatusBar } from "./ui/statusBar";
+import { noFeatureExplanation, passiveExplanation, PassiveCause, SHOW_STATUS_COMMAND, StatusBar } from "./ui/statusBar";
 import { readSettings } from "./ui/settings";
 import { openSetup } from "./ui/setup";
 import { askFinish, showSummaries, showSummary } from "./ui/summaries";
@@ -40,11 +40,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
       const cause = status.current.passive;
       if (cause) {
         void vscode.window.showInformationMessage(passiveExplanation(cause));
+      } else if (status.current.noFeature) {
+        void vscode.window.showInformationMessage(noFeatureExplanation());
       }
     }),
     vscode.commands.registerCommand("tokenomist.analyzeSpec", async () => {
       if (!tracker) {
         return explainPassive(status.current.passive);
+      }
+      if (status.current.noFeature) {
+        void vscode.window.showInformationMessage(noFeatureExplanation());
+        return;
       }
       const analysis = await tracker.analyzeActive();
       if (!analysis) {
@@ -105,10 +111,33 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
     return passive("modelOverridden");
   }
   if (!(await watcher.isSpecKitWorkspace())) {
+    // 003 FR-005: start as soon as Spec Kit appears, without a window reload.
+    const specKitAppears = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, ".specify/**"));
+    context.subscriptions.push(specKitAppears);
+    let starting = false;
+    specKitAppears.onDidCreate(async () => {
+      if (starting) {
+        return;
+      }
+      starting = true;
+      specKitAppears.dispose();
+      log("Spec Kit appeared; starting.");
+      await startTracking(context, folder, watcher, status, api);
+    });
     return passive("noSpecKit");
   }
-  await watcher.start();
+  await startTracking(context, folder, watcher, status, api);
+  return api;
+}
 
+async function startTracking(
+  context: vscode.ExtensionContext,
+  folder: vscode.WorkspaceFolder,
+  watcher: SpecKitWatcher,
+  status: StatusBar,
+  api: TokenomistApi,
+): Promise<void> {
+  await watcher.start();
   const sessions = new SessionModels();
   const startNewConversation = async () => {
     await vscode.commands.executeCommand(NEW_CONVERSATION_COMMAND);
@@ -149,6 +178,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
       gateOffline,
       tracking: tracker?.activeTracking(),
       pendingWritingModel: tracker?.pendingWriting()?.writingModel,
+      noFeature: watcher.activeFeature === undefined,
     });
   context.subscriptions.push(
     tracker.onDidChange(render),
@@ -172,7 +202,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<Tokeno
   render();
   log(`Active feature: ${watcher.activeFeature?.featureDir ?? "none"}`);
   api.onboardingOffered = await offerOnboarding(context);
-  return api;
 }
 
 export async function deactivate(): Promise<void> {

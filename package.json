@@ -23,7 +23,7 @@
   "l10n": "./l10n",
   "activationEvents": [
     "onStartupFinished",
-    "workspaceContains:.specify/feature.json"
+    "workspaceContains:.specify/**"
   ],
   "contributes": {
     "commands": [

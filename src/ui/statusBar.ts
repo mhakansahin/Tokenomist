@@ -11,6 +11,8 @@ export interface StatusView {
   tracking?: SpecTracking;
   /** Set between /speckit-specify and the new feature directory appearing. */
   pendingWritingModel?: ModelValue;
+  /** Spec Kit is installed but has no active feature yet (003 FR-002). */
+  noFeature?: boolean;
 }
 
 export const SHOW_STATUS_COMMAND = "tokenomist.showStatusDetails";
@@ -41,6 +43,10 @@ export class StatusBar implements vscode.Disposable {
   }
 }
 
+export function noFeatureExplanation(): string {
+  return vscode.l10n.t("No spec yet. Start the first one in Claude Code with /speckit-specify.");
+}
+
 export function passiveExplanation(cause: PassiveCause): string {
   switch (cause) {
     case "claudeMissing":
@@ -69,6 +75,13 @@ function describe(view: StatusView): { text: string; tooltip: string; command?: 
     return {
       text: `$(edit) Tokenomist · ${vscode.l10n.t("writing")} · ${modelLabel(view.pendingWritingModel)}`,
       tooltip: vscode.l10n.t("The spec is being written."),
+    };
+  }
+  if (!tracking && view.noFeature) {
+    return {
+      text: `$(sparkle) Tokenomist · ${vscode.l10n.t("no spec yet")}`,
+      tooltip: noFeatureExplanation(),
+      command: SHOW_STATUS_COMMAND,
     };
   }
   if (!tracking) {

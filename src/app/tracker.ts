@@ -183,8 +183,8 @@ export class Tracker {
     }
     await this.syncModelKey();
     this.emit();
-    if (bound && feature) {
-      // The spec may have been written before the watcher saw the new feature directory.
+    if (feature && (bound || !next)) {
+      // The spec may have been written before the watcher saw the new feature directory (003 FR-004).
       await this.onSpecSaved(feature);
     }
   }
