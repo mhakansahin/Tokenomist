@@ -24,5 +24,8 @@
   "config.automation": "Whether Tokenomist manages models without asking.",
   "config.automation.auto": "Automatic: lock the recommended model when the plan starts and move commands to a new conversation (with the command ready) without asking.",
   "config.automation.ask": "Ask: show a dialog before locking, switching conversations and finishing.",
-  "command.changeModel": "Change Locked Model"
+  "command.changeModel": "Change Locked Model",
+  "config.conversation": "How Spec Kit commands get their model.",
+  "config.conversation.same": "Same conversation: Tokenomist writes the model into the Spec Kit command definitions (hidden from git while changed), so every command runs with the right model in your current conversation.",
+  "config.conversation.new": "New conversation: Tokenomist sets Claude Code's model and moves commands to a new conversation when needed."
 }

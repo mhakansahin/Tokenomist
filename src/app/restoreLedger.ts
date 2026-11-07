@@ -11,6 +11,15 @@ export interface LedgerEntry {
   restore?: KeySnapshot;
   /** Tokenomist created settings.local.json, so an empty file may be deleted. */
   createdFile?: boolean;
+  /** 005: command definitions Tokenomist changed, by workspace-relative path. */
+  skills?: Record<string, SkillBackup>;
+}
+
+export interface SkillBackup {
+  /** The definition exactly as it was before Tokenomist's first change. */
+  original: string;
+  /** The file is tracked by git and was hidden with `git update-index --skip-worktree`. */
+  skipWorktree: boolean;
 }
 
 export type Ledger = Record<string, LedgerEntry>;
@@ -30,6 +39,18 @@ export class RestoreLedger {
       return;
     }
     ledger[workspaceRoot] = entry;
+    await this.write(ledger);
+  }
+
+  /** Read-modify-write of one workspace's entry. */
+  async patch(workspaceRoot: string, change: (entry: LedgerEntry) => LedgerEntry): Promise<void> {
+    const ledger = await this.read();
+    const before = ledger[workspaceRoot];
+    const next = change(before ?? {});
+    if (JSON.stringify(before) === JSON.stringify(next)) {
+      return;
+    }
+    ledger[workspaceRoot] = next;
     await this.write(ledger);
   }
 

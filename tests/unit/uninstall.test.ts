@@ -51,3 +51,15 @@ test("uninstall restores the model and removes Tokenomist hooks in every ledger 
   assert.deepEqual(JSON.parse(await fs.readFile(path.join(idle, ".claude", "settings.local.json"), "utf8")), {});
   await assert.rejects(fs.stat(ledgerFile), "the ledger is removed afterwards");
 });
+
+test("005: uninstall puts changed Spec Kit definitions back byte for byte", async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "tokenomist-uninstall-skills-"));
+  const rel = ".claude/skills/speckit-plan/SKILL.md";
+  const original = "---\nname: speckit-plan\nmodel: sonnet\n---\nBody\n";
+  await fs.mkdir(path.join(dir, ".claude", "skills", "speckit-plan"), { recursive: true });
+  await fs.writeFile(path.join(dir, rel), '---\nname: speckit-plan\nmodel: "haiku" # tokenomist\n---\nBody\n');
+  const ledgerFile = path.join(dir, "restore-ledger.json");
+  await fs.writeFile(ledgerFile, JSON.stringify({ [dir]: { skills: { [rel]: { original, skipWorktree: false } } } }));
+  await cleanWorkspaces(ledgerFile);
+  assert.equal(await fs.readFile(path.join(dir, rel), "utf8"), original);
+});

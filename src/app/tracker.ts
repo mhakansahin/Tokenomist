@@ -7,6 +7,7 @@ import * as path from "node:path";
 import type { ActiveFeature } from "./specKitWatcher";
 import { ClaudeSettingsStore } from "./claudeSettingsStore";
 import { LedgerEntry, RestoreLedger } from "./restoreLedger";
+import { PHASE_COMMANDS, SkillModelStore, WRITING_COMMANDS } from "./skillModelStore";
 import { HookBody, HookServer } from "./hookServer";
 import { resolveSessionModel, SessionModels, transcriptCreatedAt } from "./sessionModels";
 import { TrackingStore } from "../persistence/trackingStore";
@@ -53,6 +54,8 @@ export interface TrackerSettings {
   custom: CustomTable;
   /** 004 FR-001: "auto" applies the gate decisions without asking; "ask" is the 001/002 behaviour. */
   automation: "auto" | "ask";
+  /** 005 FR-001: "same" runs Spec Kit commands with the right model in the current conversation. */
+  conversation: "same" | "new";
 }
 
 export interface TrackerUi {
@@ -81,6 +84,8 @@ export interface TrackerDeps {
   trackingStore: TrackingStore;
   summaryStore: SummaryStore;
   ledger: RestoreLedger;
+  /** 005: writes the model into Spec Kit command definitions. */
+  skills?: SkillModelStore;
   sessions: SessionModels;
   settings(): TrackerSettings;
   ui: TrackerUi;
@@ -113,6 +118,7 @@ export class Tracker {
   private server: HookServer | undefined;
   private lastFeatureDir: string | undefined;
   private readonly creditsWarned = new Set<ModelValue>();
+  private definitionsPresent = false;
   /** Command name → when Tokenomist last opened a conversation for it (004 FR-010). */
   private readonly openedFor = new Map<string, number>();
   passiveReason: PassiveReason | undefined;
@@ -228,6 +234,8 @@ export class Tracker {
     if (feature && this.activeTracking()?.state === "awaitingApproval") {
       await this.analyze(feature, { notify: true });
     }
+    // Covers switching between the same- and new-conversation methods (005).
+    await this.syncModelKey();
   }
 
   /** 004 research R2: when the plan appears without the gate (hooks offline), lock the latest recommendation. */
@@ -403,6 +411,7 @@ export class Tracker {
     };
     await summaryStore.add(summary);
     await trackingStore.delete(tracking.spec.featureDir);
+    await this.syncSkills();
     await this.updateLedger();
     this.emit();
     this.deps.ui.showSummary(summary);
@@ -421,6 +430,7 @@ export class Tracker {
     if (!local) {
       return false;
     }
+    await this.deps.skills?.restoreAll();
     let next = removeTokenomistHooks(local.doc);
     if (owned) {
       next = restoreModel(next, owned);
@@ -478,6 +488,9 @@ export class Tracker {
     const command = body.command_name ?? "";
     const prompt = typeof body.prompt === "string" && body.prompt.trim() ? body.prompt : `/${command}`;
     const auto = this.automatic();
+    if (decision.kind !== "allow" && (await this.definedInProject(command))) {
+      return this.handleInSameConversation(decision, body, command);
+    }
     switch (decision.kind) {
       case "allow":
         return {};
@@ -539,6 +552,104 @@ export class Tracker {
           }
         }
         return this.blockForNewConversation(signal, { why: "mismatch", command, prompt, model: decision.lockedModel });
+      }
+    }
+  }
+
+  /**
+   * 005: the command's definition carries the model, so it runs in this conversation. Only an
+   * approval just given in ask mode stops it, because the definition was updated after the call.
+   */
+  private async handleInSameConversation(
+    decision: Exclude<ReturnType<typeof decideExpansion>, { kind: "allow" }>,
+    body: HookBody,
+    command: string,
+  ): Promise<Record<string, unknown>> {
+    const { ui, sessions, t } = this.deps;
+    switch (decision.kind) {
+      case "startWriting":
+      case "askWriting":
+        await this.startWriting();
+        return {};
+      case "askSessionMismatch":
+        return {};
+      case "askUnlockedPlan": {
+        const recommended = decision.recommendedModel;
+        if (this.automatic() && recommended) {
+          // The definition already carries the recommendation (research R3); this only fixes it.
+          if (await this.lock(recommended, false, { announce: false })) {
+            ui.autoLocked(recommended);
+          }
+          return {};
+        }
+        const ackKey = `unlocked:${this.deps.workspace.activeFeature?.featureDir}`;
+        if (sessions.isAcknowledged(body.session_id, ackKey)) {
+          return {};
+        }
+        const answer = await ui.askUnlockedPlan(recommended);
+        let choice: { model: ModelValue; manualOverride: boolean } | undefined;
+        if (answer === "approve" && recommended) {
+          choice = { model: recommended, manualOverride: false };
+        } else if (answer === "approve" || answer === "change") {
+          choice = await ui.pickModel(this.activeTracking()?.analysis);
+        }
+        if (!choice || !(await this.lock(choice.model, choice.manualOverride, { announce: false }))) {
+          sessions.acknowledge(body.session_id, ackKey);
+          return {};
+        }
+        return expansionResponse({
+          kind: "block",
+          reason: t("Tokenomist locked the model to {0}. Run /{1} again in this conversation.", modelLabelOf(choice.model), command),
+        });
+      }
+    }
+  }
+
+  /**
+   * The same-conversation method needs Spec Kit definitions to write into; without them the
+   * workspace falls back to the new-conversation method, model setting included (005 FR-007).
+   */
+  private sameConversation(): boolean {
+    return this.definitionsPresent && this.deps.settings().conversation === "same";
+  }
+
+  private async refreshDefinitions(): Promise<void> {
+    this.definitionsPresent = (await this.deps.skills?.locate("speckit-plan")) !== undefined;
+  }
+
+  private async definedInProject(command: string): Promise<boolean> {
+    await this.refreshDefinitions();
+    return this.sameConversation() && (await this.deps.skills!.locate(command)) !== undefined;
+  }
+
+  /**
+   * 005 research R3: keeps the definitions ready before the user types a command. Writing commands
+   * carry the writing model; phase commands carry the lock, or the recommendation in automatic mode.
+   */
+  private async syncSkills(): Promise<void> {
+    const skills = this.deps.skills;
+    if (!skills) {
+      return;
+    }
+    if (!this.sameConversation()) {
+      await skills.restoreAll();
+      return;
+    }
+    const { writingModel } = this.deps.settings();
+    for (const command of WRITING_COMMANDS) {
+      await skills.apply(command, writingModel);
+    }
+    const active = this.activeTracking();
+    const recommendation =
+      this.automatic() && active && (active.state === "writing" || active.state === "awaitingApproval")
+        ? active.analysis?.recommendedModel
+        : undefined;
+    const phase = this.lockedTracking()?.lock?.model ?? recommendation;
+    for (const command of PHASE_COMMANDS) {
+      if (phase) {
+        await skills.apply(command, phase);
+      } else {
+        await skills.restore(command);
       }
     }
   }
@@ -673,6 +784,7 @@ export class Tracker {
     }
     await this.deps.trackingStore.save(tracking);
     this.emit();
+    await this.syncSkills();
     if (options.notify && !unchanged && tracking.state === "awaitingApproval" && !this.automatic()) {
       this.deps.ui.recommendationReady(analysis);
     }
@@ -736,8 +848,10 @@ export class Tracker {
 
   /** Makes the local `model` key match what is wanted now and records how to undo it. */
   private async syncModelKey(): Promise<void> {
+    await this.refreshDefinitions();
     await this.applyModelKey();
     await this.updateLedger();
+    await this.syncSkills();
   }
 
   /** The `model` value to put back if Tokenomist stopped now; undefined when it does not own the key. */
@@ -759,10 +873,19 @@ export class Tracker {
       ...(restore ? { restore } : {}),
       ...(this.deps.trackingStore.getCreatedLocalFile() ? { createdFile: true } : {}),
     };
-    await this.deps.ledger.record(this.deps.workspace.root, entry);
+    // Keeps the 005 skill backups, which SkillModelStore owns.
+    await this.deps.ledger.patch(this.deps.workspace.root, ({ skills }) => ({ ...entry, ...(skills ? { skills } : {}) }));
   }
 
   private async applyModelKey(): Promise<void> {
+    if (this.sameConversation()) {
+      // 005 FR-003: the conversation model is never changed; give back a key owned from "new" mode.
+      const original = this.currentRestore();
+      if (original) {
+        await this.updateLocal((doc) => restoreModel(doc, original), { modelKey: true });
+      }
+      return;
+    }
     const pending = this.deps.trackingStore.getPendingWriting();
     if (pending) {
       await this.updateLocal((doc) => applyModel(doc, pending.writingModel), { modelKey: true });

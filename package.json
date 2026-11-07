@@ -2,7 +2,7 @@
   "name": "tokenomist",
   "displayName": "Tokenomist",
   "description": "%description%",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "mhakansahin61",
   "license": "UNLICENSED",
   "repository": {
@@ -92,6 +92,20 @@
             "%config.automation.ask%"
           ],
           "markdownDescription": "%config.automation%"
+        },
+        "tokenomist.conversation": {
+          "type": "string",
+          "enum": [
+            "same",
+            "new"
+          ],
+          "default": "same",
+          "scope": "window",
+          "enumDescriptions": [
+            "%config.conversation.same%",
+            "%config.conversation.new%"
+          ],
+          "markdownDescription": "%config.conversation%"
         },
         "tokenomist.mode": {
           "type": "string",

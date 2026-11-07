@@ -1,6 +1,7 @@
 // `vscode:uninstall` hook (research.md R7): runs with plain Node after the extension is removed.
 // Puts back the local `model` key and removes Tokenomist's hooks in every workspace from the ledger.
 
+import { execFileSync } from "node:child_process";
 import { promises as fs } from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -24,6 +25,17 @@ export function ledgerCandidates(platform: NodeJS.Platform, env: NodeJS.ProcessE
 export async function cleanWorkspaces(ledgerFile: string): Promise<void> {
   const ledger = await readLedger(ledgerFile);
   for (const [root, entry] of Object.entries(ledger)) {
+    // 005: Spec Kit command definitions back byte for byte, and visible to git again.
+    for (const [rel, backup] of Object.entries(entry.skills ?? {})) {
+      await fs.writeFile(path.join(root, rel), backup.original, "utf8").catch(() => undefined);
+      if (backup.skipWorktree) {
+        try {
+          execFileSync("git", ["-C", root, "update-index", "--no-skip-worktree", "--", rel], { windowsHide: true });
+        } catch {
+          // git missing or the file is gone; nothing else to undo.
+        }
+      }
+    }
     const file = path.join(root, ".claude", "settings.local.json");
     let text: string;
     try {

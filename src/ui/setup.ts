@@ -33,6 +33,7 @@ interface ModeItem extends vscode.QuickPickItem {
   mode?: Mode;
   openSettings?: boolean;
   toggleAutomation?: boolean;
+  toggleConversation?: boolean;
 }
 
 export async function openSetup(): Promise<void> {
@@ -52,6 +53,11 @@ export async function openSetup(): Promise<void> {
       toggleAutomation: true,
     },
     {
+      label: `$(comment-discussion) ${conversationLabel(config.get("conversation") === "new" ? "new" : "same")}`,
+      detail: vscode.l10n.t("Click to switch between the same conversation and a new conversation per model change."),
+      toggleConversation: true,
+    },
+    {
       label: `$(settings-gear) ${vscode.l10n.t("Edit thresholds and the spec-writing model in Settings")}`,
       detail: vscode.l10n.t("Use 'Reset Setting' there to go back to the defaults."),
       openSettings: true,
@@ -61,7 +67,11 @@ export async function openSetup(): Promise<void> {
     title: vscode.l10n.t("Tokenomist: choose a mode"),
     placeHolder: vscode.l10n.t("Which model should each spec complexity level use?"),
   });
-  if (picked?.toggleAutomation) {
+  if (picked?.toggleConversation) {
+    const next = config.get("conversation") === "new" ? "same" : "new";
+    await config.update("conversation", next, vscode.ConfigurationTarget.Global);
+    void vscode.window.showInformationMessage(conversationLabel(next));
+  } else if (picked?.toggleAutomation) {
     const next = config.get("automation") === "ask" ? "auto" : "ask";
     await config.update("automation", next, vscode.ConfigurationTarget.Global);
     void vscode.window.showInformationMessage(automationLabel(next));
@@ -132,4 +142,10 @@ function automationLabel(value: "auto" | "ask"): string {
   return value === "auto"
     ? vscode.l10n.t("Automation: automatic (models are managed without asking)")
     : vscode.l10n.t("Automation: ask before each change");
+}
+
+function conversationLabel(value: "same" | "new"): string {
+  return value === "same"
+    ? vscode.l10n.t("Conversation: same (commands run with the right model where you are)")
+    : vscode.l10n.t("Conversation: new one per model change");
 }

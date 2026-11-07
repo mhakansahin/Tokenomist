@@ -24,5 +24,8 @@
   "config.automation": "Tokenomist'in modelleri sormadan yönetip yönetmeyeceği.",
   "config.automation.auto": "Otomatik: plan başlarken önerilen modeli kilitle ve komutları sormadan yeni konuşmaya taşı (komut hazır yazılı).",
   "config.automation.ask": "Sorarak: kilitlemeden, konuşma değiştirmeden ve bitirmeden önce sor.",
-  "command.changeModel": "Kilitli Modeli Değiştir"
+  "command.changeModel": "Kilitli Modeli Değiştir",
+  "config.conversation": "Spec Kit komutlarının modeli nasıl alacağı.",
+  "config.conversation.same": "Aynı konuşma: Tokenomist modeli Spec Kit komut tanımlarına yazar (değiştiği sürece git'ten gizlenir); her komut mevcut konuşmanda doğru modelle çalışır.",
+  "config.conversation.new": "Yeni konuşma: Tokenomist Claude Code'un modelini ayarlar ve gerektiğinde komutları yeni konuşmaya taşır."
 }

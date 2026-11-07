@@ -11,6 +11,18 @@ Tokenomist picks the Claude model for each [Spec Kit](https://github.com/github/
 
 > **Note:** Claude Code reads the model only when a conversation starts. A lock applies to **new** conversations, so Tokenomist offers to start one. If you run `/speckit-plan` without a lock, or `/speckit-tasks` in an old conversation, Tokenomist asks first.
 
+## One conversation (default)
+
+With `tokenomist.conversation` set to `same`, every Spec Kit command runs with the right model **in the conversation you are already in**. Tokenomist writes the model into the Spec Kit command definitions (`.claude/skills/speckit-*/SKILL.md`, or `.claude/commands/speckit.*.md`) as `model: "haiku" # tokenomist`. Claude Code uses it for that command only. Your conversation's own model never changes, so a free-form message after a command still uses your usual model.
+
+- Spec-writing commands (`/speckit-specify`, `/speckit-clarify`) carry the spec-writing model.
+- Phase commands (`/speckit-plan`, `/speckit-tasks`, `/speckit-implement`, …) carry the locked model. In automatic mode they carry the current recommendation before the lock.
+- If the definitions are tracked by git, the change is hidden from `git status` and never committed (`git update-index --skip-worktree`).
+- When the spec is finished, or you run the cleanup command, or you uninstall Tokenomist, the files are restored byte for byte.
+- While a definition is changed, a `git pull` that also changes it stops with "local changes". Run *Remove Tokenomist from Claude Code Settings*, pull, and Tokenomist re-applies the model afterwards.
+
+Set `tokenomist.conversation` to `new` to use a new conversation per model change instead (below).
+
 ## Automatic mode (default)
 
 With `tokenomist.automation` set to `auto`, Tokenomist manages the model without asking:

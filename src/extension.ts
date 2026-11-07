@@ -4,6 +4,7 @@ import { CLAUDE_CODE_EXTENSION_ID, Detection, detect, readManagedSettings } from
 import { ClaudeSettingsStore } from "./app/claudeSettingsStore";
 import { LEDGER_FILE, RestoreLedger } from "./app/restoreLedger";
 import { SessionModels } from "./app/sessionModels";
+import { SkillModelStore } from "./app/skillModelStore";
 import { SpecKitWatcher } from "./app/specKitWatcher";
 import { Tracker } from "./app/tracker";
 import { SummaryStore } from "./persistence/summaryStore";
@@ -149,6 +150,7 @@ async function startTracking(
 ): Promise<void> {
   await watcher.start();
   const sessions = new SessionModels();
+  const ledger = new RestoreLedger(path.join(context.globalStorageUri.fsPath, LEDGER_FILE));
   const startNewConversation = async (prompt?: string): Promise<boolean> => {
     if (prompt) {
       try {
@@ -171,7 +173,8 @@ async function startTracking(
     settingsStore: new ClaudeSettingsStore(folder.uri.fsPath),
     trackingStore: new TrackingStore(context.workspaceState),
     summaryStore: new SummaryStore(context.globalState),
-    ledger: new RestoreLedger(path.join(context.globalStorageUri.fsPath, LEDGER_FILE)),
+    ledger,
+    skills: new SkillModelStore(folder.uri.fsPath, ledger),
     sessions,
     settings: readSettings,
     ui: {

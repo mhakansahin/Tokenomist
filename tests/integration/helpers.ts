@@ -11,6 +11,7 @@ import { DEFAULT_THRESHOLDS } from "../../src/domain/classification";
 import { Model, SpecAnalysis, SpecSummary } from "../../src/domain/types";
 import { SummaryStore } from "../../src/persistence/summaryStore";
 import { RestoreLedger } from "../../src/app/restoreLedger";
+import { SkillModelStore } from "../../src/app/skillModelStore";
 
 export const COMPLEX_SPEC = path.resolve(__dirname, "../../../tests/fixtures/specs/complex/realtime-chat.md");
 
@@ -138,6 +139,8 @@ export async function setup(options: { localSettings?: unknown } = {}) {
     writingModel: "sonnet",
     custom: {},
     automation: "ask",
+    // "new" keeps the 004 flows unchanged in these tests (005 SC-004); the product default is "same".
+    conversation: "new",
   };
   const makeTracker = (overrides: Partial<TrackerDeps> = {}) =>
     new Tracker({
@@ -146,6 +149,7 @@ export async function setup(options: { localSettings?: unknown } = {}) {
       trackingStore: new TrackingStore(memento),
       summaryStore: new SummaryStore(globalMemento),
       ledger,
+      skills: new SkillModelStore(root, ledger),
       sessions: new SessionModels(),
       settings: () => settings,
       ui,
